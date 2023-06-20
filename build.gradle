@@ -1,0 +1,115 @@
+/**
+ * Import shadowJar executor
+ */
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+
+plugins {
+    id 'java'
+    id 'com.github.johnrengelman.shadow' version '8.1.1'
+}
+
+/**
+ * This defined the current used LWJGL3 version and the default
+ * natives, this is important for load the gui handling stuff.
+ */
+project.ext.lwjglVersion = "3.3.2"
+project.ext.lwjglNatives = "natives-windows"
+
+group 'com.exepta'
+version '1.0.0-SNAPSHOT'
+
+/**
+ * Include UTF-8 coding to the java compiler.
+ */
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+/**
+ * This Task handled the windows native build.
+ */
+def windowsTask = task windowBuild(type: ShadowJar) {
+    if(project.gradle.startParameter.taskNames.contains('windowBuild')) {
+        project.ext.lwjglNatives = "natives-windows"
+    }
+    from sourceSets.main.output
+    configurations = [project.configurations.compileClasspath, project.configurations.runtimeClasspath]
+    archivesBaseName(project.name + "-windows")
+}
+
+/**
+ * This Task handled the linux native build.
+ */
+def linuxTask = task linuxBuild(type: ShadowJar) {
+    if(project.gradle.startParameter.taskNames.contains('linuxBuild')) {
+        project.ext.lwjglNatives = "natives-linux"
+    }
+    from sourceSets.main.output
+    configurations = [project.configurations.compileClasspath, project.configurations.runtimeClasspath]
+    archivesBaseName(project.name + "-linux")
+}
+
+/**
+ * This Task handled the macos native build.
+ */
+def macTask = task macBuild(type: ShadowJar) {
+    if(project.gradle.startParameter.taskNames.contains('macBuild')) {
+        project.ext.lwjglNatives = "natives-macos"
+    }
+    from sourceSets.main.output
+    configurations = [project.configurations.compileClasspath, project.configurations.runtimeClasspath]
+    archivesBaseName(project.name + "-macos")
+}
+
+windowsTask.finalizedBy(build)
+macTask.finalizedBy(build)
+linuxTask.finalizedBy(build)
+
+repositories {
+    mavenCentral()
+    maven {
+        allowInsecureProtocol = true
+        url = 'http://45.138.48.139:8081/repository/maven-public/'
+    }
+/*    maven {
+        url = 'https://nexus.byteterm.de/repository/maven-public/'
+    }*/
+}
+
+dependencies {
+    implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
+
+    implementation 'net.exsource:open-logger:1.1.1-SNAPSHOT'
+    implementation 'net.exsource:open-css:1.0.1-SNAPSHOT'
+
+    implementation "org.lwjgl:lwjgl"
+    implementation "org.lwjgl:lwjgl-assimp"
+    implementation "org.lwjgl:lwjgl-glfw"
+    implementation "org.lwjgl:lwjgl-nanovg"
+    implementation "org.lwjgl:lwjgl-openal"
+    implementation "org.lwjgl:lwjgl-opengl"
+    implementation "org.lwjgl:lwjgl-stb"
+
+    implementation "org.lwjglx:lwjgl3-awt:0.1.8"
+    implementation "org.joml:joml:1.10.4"
+    implementation 'org.jetbrains:annotations:24.0.1'
+
+    compileOnly 'org.projectlombok:lombok:1.18.24'
+    annotationProcessor 'org.projectlombok:lombok:1.18.24'
+
+
+    runtimeOnly "org.lwjgl:lwjgl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-assimp::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-glfw::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-nanovg::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-openal::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-opengl::$lwjglNatives"
+    runtimeOnly "org.lwjgl:lwjgl-stb::$lwjglNatives"
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.9.1'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.9.1'
+}
+
+test {
+    useJUnitPlatform()
+}
