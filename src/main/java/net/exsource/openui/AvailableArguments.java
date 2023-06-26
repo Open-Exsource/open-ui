@@ -1,5 +1,7 @@
 package net.exsource.openui;
 
+import org.jetbrains.annotations.NotNull;
+
 public enum AvailableArguments {
 
     UI_STYLE("ui-style"),
@@ -14,5 +16,16 @@ public enum AvailableArguments {
 
     public String getParam() {
         return param;
+    }
+
+    public static boolean isValid(@NotNull String value) {
+        boolean valid = false;
+        for(AvailableArguments arguments : values()) {
+            if(arguments.getParam().equals(value)) {
+                valid = true;
+                break;
+            }
+        }
+        return valid;
     }
 }

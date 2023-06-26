@@ -7,9 +7,11 @@ import net.exsource.openui.annotations.init.PostInit;
 import net.exsource.openui.annotations.AnnotationProcessor;
 import net.exsource.openui.annotations.init.PreInit;
 import net.exsource.openui.events.UIPreLoadEvent;
+import net.exsource.openui.exception.OpenUIInitializeException;
 import net.exsource.openutils.event.EventManager;
 import net.exsource.openutils.io.IOController;
 import net.exsource.openutils.io.controller.PropertiesController;
+import org.lwjgl.glfw.GLFW;
 
 import java.io.IOException;
 
@@ -62,6 +64,20 @@ public final class OpenUI {
     private static void checkProgramArgs(String[] args) {
         try {
             properties = IOController.fromArgs(args, PropertiesController.class);
+            if(properties.getEntries().isEmpty()) {
+                logger.warn("Properties was created but no args was found!");
+                return;
+            }
+            for(String property : properties.getProperties()) {
+                logger.debug(property);
+                String key = property.substring(0, property.indexOf(":"));
+                if(!AvailableArguments.isValid(key)) {
+                    errorCode = 101;
+                }
+            }
+            if(errorCode == 0) {
+                logger.info("All arguments ar successfully checked!");
+            }
         } catch (IOException exception) {
             errorCode = 101;
             logger.error(exception);
@@ -69,7 +85,14 @@ public final class OpenUI {
     }
 
     private static void checkOpenGL() {
-
+        logger.info("Try to generate OpenGL context...");
+        if(!(GLFW.glfwInit())) {
+            errorCode = 304;
+            return;
+        }
+        if(errorCode == 0) {
+            logger.info("Successfully created OpenGL context in thread " + ConsoleColor.GREEN + Thread.currentThread().getName() + ConsoleColor.RESET);
+        }
     }
 
     private static void checkErrors() {
@@ -81,7 +104,7 @@ public final class OpenUI {
                 logger.warn("Program have wrong program arguments! Status [ " + ConsoleColor.YELLOW + errorCode + ConsoleColor.RESET + " ]");
             }
             case 304 -> {
-                logger.fatal("Program can't find OpenGL [ " + ConsoleColor.RED_BOLD + errorCode + ConsoleColor.RESET + " ]");
+                logger.fatal(new OpenUIInitializeException("Can't create OpenGL Context!"));
                 System.exit(errorCode);
             }
         }
