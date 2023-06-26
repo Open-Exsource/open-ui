@@ -1,0 +1,4 @@
+Code                Description                                                 Level
+0                   The program have no errors or warnings.                     Fine
+304                 OpenGL can't create in current thread.                      Fatal
+101                 Program arguments was't not correct.                        Warning

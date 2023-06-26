@@ -79,8 +79,9 @@ repositories {
 dependencies {
     implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
 
-    implementation 'net.exsource:open-logger:1.1.1-SNAPSHOT'
-    implementation 'net.exsource:open-css:1.0.1-SNAPSHOT'
+    implementation 'net.exsource:open-logger:1.0.1-SNAPSHOT'
+    implementation 'net.exsource:open-css:1.0.0-SNAPSHOT'
+    implementation 'net.exsource:open-utils:1.0.0-SNAPSHOT'
 
     implementation "org.lwjgl:lwjgl"
     implementation "org.lwjgl:lwjgl-assimp"
