@@ -6,6 +6,7 @@ import net.exsource.openui.annotations.init.Init;
 import net.exsource.openui.annotations.init.PostInit;
 import net.exsource.openui.annotations.AnnotationProcessor;
 import net.exsource.openui.annotations.init.PreInit;
+import net.exsource.openui.enums.AvailableArguments;
 import net.exsource.openui.events.UIPreLoadEvent;
 import net.exsource.openui.exception.OpenUIInitializeException;
 import net.exsource.openutils.event.EventManager;
@@ -62,9 +63,10 @@ public final class OpenUI {
     }
 
     private static void checkProgramArgs(String[] args) {
+        logger.debug("OpenUI-State => Program argument check.");
         try {
             properties = IOController.fromArgs(args, PropertiesController.class);
-            if(properties.getEntries().isEmpty()) {
+            if(properties.isEmpty()) {
                 logger.warn("Properties was created but no args was found!");
                 return;
             }
@@ -85,7 +87,8 @@ public final class OpenUI {
     }
 
     private static void checkOpenGL() {
-        logger.info("Try to generate OpenGL context...");
+        logger.debug("OpenUI-State => LWJGL3 library include check.");
+        logger.info("Generate OpenGL context...");
         if(!(GLFW.glfwInit())) {
             errorCode = 304;
             return;
@@ -96,6 +99,7 @@ public final class OpenUI {
     }
 
     private static void checkErrors() {
+        logger.debug("OpenUI-State => Error code check.");
         switch (errorCode) {
             case 0 -> {
                 logger.info("Program have no errors! Status [ " + ConsoleColor.GREEN + errorCode + ConsoleColor.RESET + " ]");

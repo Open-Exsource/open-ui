@@ -11,7 +11,7 @@ public class InitializeExample {
     private static final Logger logger = Logger.getLogger();
 
     public static void main(String[] args) {
-        Logger.enableDebug(false);
+        Logger.enableDebug(true);
         OpenUI.launch(args);
     }
 

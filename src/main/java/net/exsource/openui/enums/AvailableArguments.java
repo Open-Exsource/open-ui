@@ -1,4 +1,4 @@
-package net.exsource.openui;
+package net.exsource.openui.enums;
 
 import org.jetbrains.annotations.NotNull;
 

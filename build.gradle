@@ -71,9 +71,6 @@ repositories {
         allowInsecureProtocol = true
         url = 'http://45.138.48.139:8081/repository/maven-public/'
     }
-/*    maven {
-        url = 'https://nexus.byteterm.de/repository/maven-public/'
-    }*/
 }
 
 dependencies {
@@ -81,7 +78,7 @@ dependencies {
 
     implementation 'net.exsource:open-logger:1.0.1-SNAPSHOT'
     implementation 'net.exsource:open-css:1.0.0-SNAPSHOT'
-    implementation 'net.exsource:open-utils:1.0.1-SNAPSHOT'
+    implementation 'net.exsource:open-utils:1.0.2-SNAPSHOT'
 
     implementation "org.lwjgl:lwjgl"
     implementation "org.lwjgl:lwjgl-assimp"
