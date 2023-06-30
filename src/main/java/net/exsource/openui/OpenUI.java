@@ -48,6 +48,10 @@ public final class OpenUI {
         logger.info("Successfully launch OpenUI in class: " + ConsoleColor.GREEN + className + ConsoleColor.RESET);
     }
 
+    public static void exit(int programCode) {
+        //Todo: let the program crash or something.
+    }
+
     public static boolean isCalled() {
         return called;
     }

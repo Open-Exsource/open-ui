@@ -24,12 +24,7 @@ public class Window extends ParentWindow {
 
     @Override
     protected void update() {
-        try {
-            TimeUnit.SECONDS.sleep(1);
-            logger.info("Update window -> " + getSerialID());
-        } catch (InterruptedException e) {
-            throw new RuntimeException(e);
-        }
+
     }
 
     @Override

@@ -1,4 +1,4 @@
-package net.exsource.openui.exception;
+package net.exsource.openui.exception.windows;
 
 public class WindowNotThreadedException extends IllegalArgumentException {
 
