@@ -5,7 +5,6 @@ import org.jetbrains.annotations.NotNull;
 public enum AvailableArguments {
 
     UI_STYLE("ui-style"),
-    UI_LOGIC("ui-logic"),
     UI_MAX_THREADS("ui-max-threads");
 
     private final String param;

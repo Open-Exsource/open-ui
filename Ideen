@@ -1,0 +1,10 @@
+Logic of window system
+--------------------------------------------------
+AbstractWindow
+    -> ParentWindow -> (Window.class) (one Thread)
+    -> ChildWindow -> (DialogWindow.class) (parent Thread)
+
+Method logic:
+    AbstractWindow#run
+    ParentWindow#run | ChildWindow#run
+    Extends Classes#loop

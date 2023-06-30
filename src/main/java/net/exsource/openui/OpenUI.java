@@ -48,6 +48,14 @@ public final class OpenUI {
         logger.info("Successfully launch OpenUI in class: " + ConsoleColor.GREEN + className + ConsoleColor.RESET);
     }
 
+    public static boolean isCalled() {
+        return called;
+    }
+
+    public static PropertiesController getProperties() {
+        return properties;
+    }
+
     private static Class<?> getMainClass() {
         String classPath = null;
         StackTraceElement[] trace = Thread.currentThread().getStackTrace();
