@@ -4,6 +4,7 @@ import org.jetbrains.annotations.NotNull;
 
 public enum AvailableArguments {
 
+    LEGACY_MODE("legacy-mode"),
     UI_STYLE("ui-style"),
     UI_MAX_THREADS("ui-max-threads");
 
