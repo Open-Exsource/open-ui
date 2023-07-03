@@ -1,17 +1,13 @@
 package net.exsource.openui.ui;
 
-import lombok.AllArgsConstructor;
-import lombok.Getter;
 import net.exsource.openlogger.Logger;
 import net.exsource.openlogger.level.LogLevel;
 import net.exsource.openlogger.util.ConsoleColor;
 import net.exsource.openui.OpenUI;
-import net.exsource.openui.UIManager;
+import net.exsource.openui.UIFactory;
 import net.exsource.openui.enums.Errors;
-import net.exsource.openui.events.windows.WindowCreateEvent;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
 import net.exsource.openutils.enums.StringPattern;
-import net.exsource.openutils.event.EventManager;
 import net.exsource.openutils.tools.Commons;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.nanovg.NanoVGGL3;
@@ -34,13 +30,13 @@ public abstract class AbstractWindow {
     public static final Integer DEFAULT_HEIGHT = 600;
 
     private final CountDownLatch latch;
+    private final Thread thread;
 
-    private final String serialID;
+    private final String identifier;
     private long hardwareID;
 
     protected Context context;
 
-    private State state;
     private String title;
 
     private int width;
@@ -49,15 +45,36 @@ public abstract class AbstractWindow {
     protected boolean used;
     private boolean created;
 
-    public AbstractWindow(String serialID) {
+    public AbstractWindow(String identifier) {
         this.latch = new CountDownLatch(1);
-        this.serialID = generateSerialID(serialID);
+        this.identifier = generateSerialID(identifier);
         this.title = getClass().getSimpleName();
         this.used = false;
         this.width = DEFAULT_WIDTH;
         this.height = DEFAULT_HEIGHT;
-        this.setState(State.CREATION);
+        this.thread = UIFactory.generateThread(this::run, this);
+        this.thread.start();
     }
+
+    protected void run() {
+        build();
+        defaultConfigure();
+
+        initialize();
+        while (!willClose()) {
+            GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+
+            update();
+
+            GLFW.glfwSwapBuffers(hardwareID);
+            GLFW.glfwPollEvents();
+        }
+        destroy();
+    }
+
+    protected abstract void initialize();
+    protected abstract void update();
+    protected abstract void destroy();
 
     /* **************************************************************************
      *
@@ -65,14 +82,8 @@ public abstract class AbstractWindow {
      *
      * **************************************************************************/
 
-    public abstract void destroy();
-
-    public abstract void run();
-
-    public abstract boolean isParent();
-
-    public String getSerialID() {
-        return serialID;
+    public String getIdentifier() {
+        return identifier;
     }
 
     public long getHardwareID() {
@@ -84,12 +95,8 @@ public abstract class AbstractWindow {
         return context;
     }
 
-    public void setState(State state) {
-        this.state = state;
-    }
-
-    public State getState() {
-        return state;
+    public Thread getThread() {
+        return thread;
     }
 
     public String getType() {
@@ -133,13 +140,13 @@ public abstract class AbstractWindow {
     }
 
     protected void build() {
-        logger.info("Build window " + getSerialID() + "...");
+        logger.info("Build window " + getIdentifier() + "...");
         GLFW.glfwDefaultWindowHints();
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
         this.hardwareID = GLFW.glfwCreateWindow(width, height, title, NULL, NULL);
         if(hardwareID <= NULL) {
             this.created = false;
-            logger.fatal(new WindowCantBuildException("Can't build window " + getSerialID()));
+            logger.fatal(new WindowCantBuildException("Can't build window " + getIdentifier()));
             OpenUI.exit(Errors.WINDOW_BUILD.getCode());
             return;
         }
@@ -149,18 +156,17 @@ public abstract class AbstractWindow {
 
         GLFW.glfwMakeContextCurrent(hardwareID);
         GLFW.glfwSwapInterval(1);
-        logger.info("Window HID=" + hardwareID + ", named=" + getSerialID());
+        logger.info("Window HID=" + hardwareID + ", named=" + getIdentifier());
         this.created = true;
         latch.countDown();
-        EventManager.callEvent(new WindowCreateEvent(this));
     }
 
     protected void defaultConfigure() {
         GLCapabilities capabilities = GL.createCapabilities();
         long nvgID = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_STENCIL_STROKES | NanoVGGL3.NVG_ANTIALIAS);
-        this.context = new Context(nvgID, hardwareID, capabilities);
+        this.context = new Context(hardwareID, nvgID, capabilities);
 
-        logger.debug("Crating context for " + getSerialID());
+        logger.debug("Crating context for " + getIdentifier());
         printGraphicCardInformation();
         GL11.glDisable(GL11.GL_DEPTH_TEST);
         GL11.glDisable(GL11.GL_SCISSOR_TEST);
@@ -177,10 +183,10 @@ public abstract class AbstractWindow {
         if(serialID == null) {
             serialID = Commons.generateString(StringPattern.NUMBERS_AND_ALPHABETIC, 8);
         }
-        if(UIManager.containsWindow(serialID)) {
+        if(UIFactory.containsWindow(serialID)) {
             logger.warn("Window serialID=" + serialID + ", already exist... generating new one...");
             int index = 1;
-            for(String IDs : UIManager.getRegisteredWindows().keySet()) {
+            for(String IDs : UIFactory.getWindows().keySet()) {
                 if(IDs.startsWith(serialID) || IDs.startsWith(serialID + "-")) {
                     index++;
                 }
@@ -333,7 +339,7 @@ public abstract class AbstractWindow {
     public <T> T casted() {
         T window = (T) this;
         try {
-            window = (T) Class.forName(getClass().getName()).getDeclaredConstructor(String.class).newInstance(getSerialID());
+            window = (T) Class.forName(getClass().getName()).getDeclaredConstructor(String.class).newInstance(getIdentifier());
         } catch (Exception exception) {
             logger.error(exception);
         }
@@ -346,19 +352,6 @@ public abstract class AbstractWindow {
      *
      * **************************************************************************/
 
-    @Getter
-    @AllArgsConstructor
-    public static class Context {
+    private record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
 
-        private long nvgID;
-        private long hardwareID;
-        private GLCapabilities capabilities;
-
-    }
-
-    public enum State {
-        CREATION,
-        INITIALIZATION,
-        FINISHED
-    }
 }
