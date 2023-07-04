@@ -7,16 +7,19 @@ import net.exsource.openui.OpenUI;
 import net.exsource.openui.UIFactory;
 import net.exsource.openui.enums.Errors;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
-import net.exsource.openutils.enums.StringPattern;
-import net.exsource.openutils.tools.Commons;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.nanovg.NanoVG;
 import org.lwjgl.nanovg.NanoVGGL3;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
@@ -26,6 +29,8 @@ public abstract class AbstractWindow {
 
     private static final Logger logger = Logger.getLogger();
 
+    private final Map<String, AbstractWindow> children = new HashMap<>();
+
     public static final Integer DEFAULT_WIDTH = 800;
     public static final Integer DEFAULT_HEIGHT = 600;
 
@@ -33,7 +38,7 @@ public abstract class AbstractWindow {
     private final Thread thread;
 
     private final String identifier;
-    private long hardwareID;
+    private long openglID;
 
     protected Context context;
 
@@ -42,16 +47,19 @@ public abstract class AbstractWindow {
     private int width;
     private int height;
 
-    protected boolean used;
+    private AbstractWindow parent;
+
+    protected boolean enabled;
     private boolean created;
 
     public AbstractWindow(String identifier) {
         this.latch = new CountDownLatch(1);
         this.identifier = generateSerialID(identifier);
         this.title = getClass().getSimpleName();
-        this.used = false;
+        this.enabled = false;
         this.width = DEFAULT_WIDTH;
         this.height = DEFAULT_HEIGHT;
+        this.parent = null;
         this.thread = UIFactory.generateThread(this::run, this);
         this.thread.start();
     }
@@ -63,10 +71,14 @@ public abstract class AbstractWindow {
         initialize();
         while (!willClose()) {
             GL11.glClear(GL11.GL_COLOR_BUFFER_BIT | GL11.GL_DEPTH_BUFFER_BIT);
+            NanoVG.nvgBeginFrame(context.nvgID(), width, height, 1f);
 
             update();
 
-            GLFW.glfwSwapBuffers(hardwareID);
+            NanoVG.nvgRestore(context.nvgID());
+            NanoVG.nvgEndFrame(context.nvgID());
+
+            GLFW.glfwSwapBuffers(openglID);
             GLFW.glfwPollEvents();
         }
         destroy();
@@ -74,21 +86,15 @@ public abstract class AbstractWindow {
 
     protected abstract void initialize();
     protected abstract void update();
-    protected abstract void destroy();
-
-    /* **************************************************************************
-     *
-     *                                  General
-     *
-     * **************************************************************************/
+    public abstract void destroy();
 
     public String getIdentifier() {
         return identifier;
     }
 
-    public long getHardwareID() {
+    public long getOpenglID() {
         _wait();
-        return hardwareID;
+        return openglID;
     }
 
     public Context getContext() {
@@ -114,8 +120,8 @@ public abstract class AbstractWindow {
         return title;
     }
 
-    public boolean isUsed() {
-        return used;
+    public boolean isEnabled() {
+        return enabled;
     }
 
     public boolean isCreated() {
@@ -139,12 +145,75 @@ public abstract class AbstractWindow {
         return height;
     }
 
+    public void addChild(AbstractWindow window) {
+        if(window == null) {
+            logger.warn("Can't have a null children!");
+            return;
+        }
+
+        if(hasChild(window)) {
+            logger.warn("This window " + window.getIdentifier() + ", is already a child of " + getIdentifier());
+            return;
+        }
+
+        if(UIFactory.hasThread(window)) {
+            //Todo: stop and change...
+        }
+
+        children.put(window.getIdentifier(), window);
+        window.setParent(this);
+    }
+
+    protected void setParent(AbstractWindow parent) {
+        this.parent = parent;
+    }
+
+    public AbstractWindow getParent() {
+        return parent;
+    }
+
+    public boolean isParent() {
+        return !children.isEmpty() && !isChild();
+    }
+
+    public boolean isChild() {
+        return getParent() != null;
+    }
+
+    public boolean hasChild(@NotNull AbstractWindow window) {
+        return hasChild(window.getIdentifier());
+    }
+
+    public boolean hasChild(@NotNull String ID) {
+        return children.containsKey(ID);
+    }
+
+    public AbstractWindow getChild(@NotNull AbstractWindow window) {
+        return getChild(window.getIdentifier());
+    }
+
+    public AbstractWindow getChild(@NotNull String ID) {
+        return children.get(ID);
+    }
+
+    public Map<String, AbstractWindow> getChildrenMap() {
+        return children;
+    }
+
+    public List<AbstractWindow> getChildren() {
+        List<AbstractWindow> list = new ArrayList<>();
+        for(Map.Entry<String, AbstractWindow> entry : children.entrySet()) {
+            list.add(entry.getValue());
+        }
+        return list;
+    }
+
     protected void build() {
         logger.info("Build window " + getIdentifier() + "...");
         GLFW.glfwDefaultWindowHints();
         GLFW.glfwWindowHint(GLFW.GLFW_RESIZABLE, GLFW.GLFW_TRUE);
-        this.hardwareID = GLFW.glfwCreateWindow(width, height, title, NULL, NULL);
-        if(hardwareID <= NULL) {
+        this.openglID = GLFW.glfwCreateWindow(width, height, title, NULL, NULL);
+        if(openglID <= NULL) {
             this.created = false;
             logger.fatal(new WindowCantBuildException("Can't build window " + getIdentifier()));
             OpenUI.exit(Errors.WINDOW_BUILD.getCode());
@@ -154,9 +223,9 @@ public abstract class AbstractWindow {
         //Todo: register callbacks
         //Todo: register renderers (default)
 
-        GLFW.glfwMakeContextCurrent(hardwareID);
+        GLFW.glfwMakeContextCurrent(openglID);
         GLFW.glfwSwapInterval(1);
-        logger.info("Window HID=" + hardwareID + ", named=" + getIdentifier());
+        logger.info("Window HID=" + openglID + ", named=" + getIdentifier());
         this.created = true;
         latch.countDown();
     }
@@ -164,7 +233,7 @@ public abstract class AbstractWindow {
     protected void defaultConfigure() {
         GLCapabilities capabilities = GL.createCapabilities();
         long nvgID = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_STENCIL_STROKES | NanoVGGL3.NVG_ANTIALIAS);
-        this.context = new Context(hardwareID, nvgID, capabilities);
+        this.context = new Context(openglID, nvgID, capabilities);
 
         logger.debug("Crating context for " + getIdentifier());
         printGraphicCardInformation();
@@ -179,9 +248,103 @@ public abstract class AbstractWindow {
         GL11.glViewport(0, 0, getWidth(), (int) getHeight());
     }
 
+    public void restore() {
+        GLFW.glfwRestoreWindow(getOpenglID());
+    }
+
+    public void close() {
+        GLFW.glfwSetWindowShouldClose(getOpenglID(), true);
+        this.enabled = false;
+    }
+
+    public boolean willClose() {
+        return GLFW.glfwWindowShouldClose(getOpenglID());
+    }
+
+    public void show() {
+        if(!isVisible()) {
+            GLFW.glfwShowWindow(getOpenglID());
+        }
+    }
+
+    public void hide() {
+        if(isVisible()) {
+            GLFW.glfwHideWindow(getOpenglID());
+        }
+    }
+
+    public boolean isVisible() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_VISIBLE) == GLFW.GLFW_TRUE;
+    }
+
+    public void setMaximized(boolean maximized) {
+        if(maximized) {
+            GLFW.glfwMaximizeWindow(getOpenglID());
+            return;
+        }
+        this.restore();
+    }
+
+    public boolean isMaximized() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE;
+    }
+
+    public void setIconified(boolean iconified) {
+        if(iconified) {
+            GLFW.glfwIconifyWindow(getOpenglID());
+            return;
+        }
+        this.restore();
+    }
+
+    public boolean isIconified() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE;
+    }
+
+    public void setFocused(boolean focused) {
+        if(focused) {
+            GLFW.glfwFocusWindow(getOpenglID());
+            return;
+        }
+        this.restore();
+    }
+
+    public boolean isFocused() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
+    }
+
+    public void setAlwaysOnTop(boolean alwaysOnTop) {
+        GLFW.glfwSetWindowAttrib(getOpenglID(), GLFW.GLFW_FLOATING, alwaysOnTop ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+    }
+
+    public boolean isAlwaysOnTop() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_FLOATING) == GLFW.GLFW_TRUE;
+    }
+
+    public void setResizeable(boolean resizeable) {
+        GLFW.glfwSetWindowAttrib(getOpenglID(), GLFW.GLFW_RESIZABLE, resizeable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
+    }
+
+    public boolean isResizeable() {
+        return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_RESIZABLE) == GLFW.GLFW_TRUE;
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T> T casted() {
+        T window = (T) this;
+        try {
+            window = (T) Class.forName(getClass().getName()).getDeclaredConstructor(String.class).newInstance(getIdentifier());
+        } catch (Exception exception) {
+            logger.error(exception);
+        }
+        return window;
+    }
+
+    private record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
+
     private String generateSerialID(String serialID) {
         if(serialID == null) {
-            serialID = Commons.generateString(StringPattern.NUMBERS_AND_ALPHABETIC, 8);
+            serialID = getClass().getSimpleName();
         }
         if(UIFactory.containsWindow(serialID)) {
             logger.warn("Window serialID=" + serialID + ", already exist... generating new one...");
@@ -202,156 +365,18 @@ public abstract class AbstractWindow {
         info.add("OpenGL Version: " + Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION)).substring(0, 3));
         info.add("Graphic Card: " + GL11.glGetString(GL11.GL_RENDERER));
         info.add("Graphic Provider: " + GL11.glGetString(GL11.GL_VENDOR));
-        logger.list(info, "Graphics", ConsoleColor.CYAN, LogLevel.INFO);
+        logger.list(info, "Graphics", ConsoleColor.GREEN, LogLevel.INFO);
 
+        String[] extensions = Objects.requireNonNull(GL11.glGetString(GL11.GL_EXTENSIONS)).split(" ");
+        List<String> extendedInfo = new ArrayList<>(Arrays.asList(extensions));
+        logger.empty("");
+        logger.list(extendedInfo, "Graphics Extensions", ConsoleColor.CYAN, LogLevel.DEBUG);
     }
-
-    /* **************************************************************************
-     *
-     *                                  Extended
-     *
-     * **************************************************************************/
 
     private void _wait() {
         try {
             latch.await();
         } catch (InterruptedException ignored) {}
     }
-
-    public void restore() {
-        GLFW.glfwRestoreWindow(getHardwareID());
-    }
-
-    public void close() {
-        GLFW.glfwSetWindowShouldClose(getHardwareID(), true);
-        this.used = false;
-    }
-
-    public boolean willClose() {
-        return GLFW.glfwWindowShouldClose(getHardwareID());
-    }
-
-    public void show() {
-        if(!isVisible()) {
-            GLFW.glfwShowWindow(getHardwareID());
-        }
-    }
-
-    public void hide() {
-        if(isVisible()) {
-            GLFW.glfwHideWindow(getHardwareID());
-        }
-    }
-
-    public boolean isVisible() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_VISIBLE) == GLFW.GLFW_TRUE;
-    }
-
-    /**
-     * This method maximized the current window object.
-     * @param maximized this window.
-     */
-    public void setMaximized(boolean maximized) {
-        if(maximized) {
-            GLFW.glfwMaximizeWindow(getHardwareID());
-            return;
-        }
-        this.restore();
-    }
-
-    /**
-     * @return boolean - the window maximize state.
-     */
-    public boolean isMaximized() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE;
-    }
-
-    /**
-     * This method set the current window iconified.
-     * @param iconified this window.
-     */
-    public void setIconified(boolean iconified) {
-        if(iconified) {
-            GLFW.glfwIconifyWindow(getHardwareID());
-            return;
-        }
-        this.restore();
-    }
-
-    /**
-     * @return boolean the window iconified state.
-     */
-    public boolean isIconified() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE;
-    }
-
-    /**
-     * This method focused the current window.
-     * This means that the input targets this window.
-     * @param focused this window.
-     */
-    public void setFocused(boolean focused) {
-        if(focused) {
-            GLFW.glfwFocusWindow(getHardwareID());
-            return;
-        }
-        this.restore();
-    }
-
-    /**
-     * @return boolean - the window focused state.
-     */
-    public boolean isFocused() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
-    }
-
-    /**
-     * This method set the window all time on the top layer of your desktop.
-     * @param alwaysOnTop force always on top.
-     */
-    public void setAlwaysOnTop(boolean alwaysOnTop) {
-        GLFW.glfwSetWindowAttrib(getHardwareID(), GLFW.GLFW_FLOATING, alwaysOnTop ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
-    }
-
-    /**
-     * @return boolean - the window always on top state.
-     */
-    public boolean isAlwaysOnTop() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_FLOATING) == GLFW.GLFW_TRUE;
-    }
-
-    /**
-     * This method allowed the user to resize the current window.
-     * @param resizeable state for this window.
-     */
-    public void setResizeable(boolean resizeable) {
-        GLFW.glfwSetWindowAttrib(getHardwareID(), GLFW.GLFW_RESIZABLE, resizeable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
-    }
-
-    /**
-     * @return boolean - the window can resize the state.
-     */
-    public boolean isResizeable() {
-        return GLFW.glfwGetWindowAttrib(getHardwareID(), GLFW.GLFW_RESIZABLE) == GLFW.GLFW_TRUE;
-    }
-
-    @SuppressWarnings("unchecked")
-    public <T> T casted() {
-        T window = (T) this;
-        try {
-            window = (T) Class.forName(getClass().getName()).getDeclaredConstructor(String.class).newInstance(getIdentifier());
-        } catch (Exception exception) {
-            logger.error(exception);
-        }
-        return window;
-    }
-
-    /* **************************************************************************
-     *
-     *                                 Class/Enum
-     *
-     * **************************************************************************/
-
-    private record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
 
 }

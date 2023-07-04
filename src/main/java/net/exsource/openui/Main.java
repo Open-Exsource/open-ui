@@ -7,7 +7,9 @@ public class Main {
     public static void main(String[] args) {
         OpenUI.launch(args);
 
-        Window window = new Window(null);
+        Window window = UIFactory.createWindow(Window.class);
+
+        window.setResizeable(false);
     }
 
 }
