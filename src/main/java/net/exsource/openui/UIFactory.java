@@ -4,7 +4,9 @@ import net.exsource.openlogger.Logger;
 import net.exsource.openui.ui.AbstractWindow;
 import org.jetbrains.annotations.NotNull;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class UIFactory {
@@ -12,6 +14,14 @@ public final class UIFactory {
     private static final Logger logger = Logger.getLogger();
 
     private static final Map<String, AbstractWindow> windows = new HashMap<>();
+
+    public static List<AbstractWindow> getWindowList() {
+        List<AbstractWindow> windowList = new ArrayList<>();
+        for(Map.Entry<String, AbstractWindow> entry : windows.entrySet()) {
+            windowList.add(entry.getValue());
+        }
+        return windowList;
+    }
 
     public static boolean containsWindow(@NotNull AbstractWindow window) {
         return getWindow(window) != null;
