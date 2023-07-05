@@ -9,11 +9,13 @@ import net.exsource.openui.enums.Errors;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.nanovg.NanoVG;
 import org.lwjgl.nanovg.NanoVGGL3;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,6 +24,10 @@ import java.util.concurrent.CountDownLatch;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
 
+/**
+ * @since 1.0.0
+ * @author Daniel Ramke
+ */
 public abstract class UIWindow {
 
     private static final Logger logger = Logger.getLogger();
@@ -52,10 +58,26 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * This constructor is use his main constructor. Chose this for fast
+     * initialization.
+     */
     public UIWindow() {
         this(null);
     }
 
+    /**
+     * The main constructor of this class, this will be called
+     * if you create a new window which is an instance of this.
+     * it is recommended to use this class as window creation helper because you can then use
+     * {@link UIFactory#createWindow(String, String, int, int, Class)} to initialize you window.
+     * If you need a complete finished loop system which can swap fps and ups then use
+     * {@link AbstractWindow} instance of {@link UIWindow}.
+     * @param identifier the identifier for the window. If it null then it will create a identifier by
+     *                   {@link #generateSerialID(String)}.
+     * @see AbstractWindow
+     * @see UIFactory
+     */
     public UIWindow(String identifier) {
         this.latch = new CountDownLatch(1);
         this.identifier = generateSerialID(identifier);
@@ -72,15 +94,44 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * Function is called in constructor as thread runnable. The function will be
+     * used as parameter for {@link UIFactory#generateThread(Runnable, UIWindow)}
+     * its replaced the run param. We call here the abstract functions {@link #initialize()},
+     * {@link #loop()} and {@link #destroy()}. You can use this three functions to control the life
+     * span of the window.
+     * @see AbstractWindow
+     * @see UIFactory
+     */
     protected void run() {
         initialize();
         loop();
         destroy();
     }
 
+    /**
+     * Function is used for the initialization state at a window.
+     * You can create here object like one use thinks or variables like final. Note i mean like final you can't
+     * use here final as key word because this can only in constructors. This function is called automatically
+     * in the {@link #run()} life span.
+     */
     protected abstract void initialize();
+
+    /**
+     * Function is used for the update/looping state for a window.
+     * You can create here object like multi use thinks. Note don't use this function for initialization thinks
+     * because it will call all milliseconds. If you need an object which need one time initialization then
+     * use the {@link #initialize()} function instance of this.
+     * This function is called automatically
+     * in the {@link #run()} life span.
+     */
     protected abstract void loop();
 
+    /**
+     * Function is used for clean up your window. Use this after the window is closed for
+     * clean list, maps or buffers. This was an example, you can here make what you want.
+     * This is the end of a window life span and not the best location to create or initialize thinks.
+     */
     public abstract void destroy();
 
     /* ########################################################################
@@ -89,23 +140,38 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * @return String - window named identifier, a readable name for humans.
+     */
     public String getIdentifier() {
         return identifier;
     }
 
+    /**
+     * @return long - from glfw created id for the window, is better for the maschine to read.
+     */
     public long getOpenglID() {
         _wait();
         return openglID;
     }
 
+    /**
+     * @return Context - the context archive contains openglID, nvgID and GLCapabilities.
+     */
     public Context getContext() {
         return context;
     }
 
+    /**
+     * @return Thread - the java thread which is holding the current window.
+     */
     public Thread getThread() {
         return thread;
     }
 
+    /**
+     * @return String - window type is {@link Class#getSimpleName()} because the name of class ar the type.
+     */
     public String getType() {
         return getClass().getSimpleName();
     }
@@ -118,10 +184,16 @@ public abstract class UIWindow {
         GLFW.glfwSetWindowTitle(getOpenglID(), title);
     }
 
+    /**
+     * @return String - the current using title from the window.
+     */
     public String getTitle() {
         return title;
     }
 
+    /**
+     * @return boolean - true if the window was created by {@link #build()}.
+     */
     public boolean isCreated() {
         _wait();
         return created;
@@ -131,6 +203,9 @@ public abstract class UIWindow {
         this.width = width;
     }
 
+    /**
+     * @return int - the current window width.
+     */
     public int getWidth() {
         return width;
     }
@@ -139,6 +214,9 @@ public abstract class UIWindow {
         this.height = height;
     }
 
+    /**
+     * @return int - the current window height.
+     */
     public int getHeight() {
         return height;
     }
@@ -198,6 +276,11 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * Function generates a new GLFW window by using {@link GLFW#glfwCreateWindow(int, int, ByteBuffer, long, long)}.
+     * This will set up the class and usable for the user. You can override this function if you need your own system.
+     * But make sure you set the openglID.
+     */
     protected void build() {
         logger.info("Build window " + getIdentifier() + "...");
         GLFW.glfwDefaultWindowHints();
@@ -220,6 +303,11 @@ public abstract class UIWindow {
         latch.countDown();
     }
 
+    /**
+     * Function creates the configuration for the created window by {@link #build()}. Make sure you're using
+     * this function after {@link #build()} was called. If you swap this to or ignores the build state, the window
+     * will not work, because the function needs the openglID.
+     */
     protected void defaultConfigure() {
         GLCapabilities capabilities = GL.createCapabilities();
         long nvgID = NanoVGGL3.nvgCreate(NanoVGGL3.NVG_STENCIL_STROKES | NanoVGGL3.NVG_ANTIALIAS);
@@ -234,6 +322,10 @@ public abstract class UIWindow {
         GL11.glBlendFunc(GL11.GL_SRC_ALPHA, GL11.GL_ONE_MINUS_SRC_ALPHA);
     }
 
+    /**
+     * Function set the current viewport of opengl by calling {@link GL11#glViewport(int, int, int, int)}.
+     * This is helpful for games which need more flexibility.
+     */
     protected void calculateViewPort() {
         GL11.glViewport(0, 0, getWidth(), (int) getHeight());
     }
@@ -244,34 +336,55 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * Function restores the window to default state.
+     */
     public void restore() {
         GLFW.glfwRestoreWindow(getOpenglID());
     }
 
+    /**
+     * Function triggered the window to close. This will stop the thread and all running {@link Dialog}'s!
+     */
     public void close() {
         GLFW.glfwSetWindowShouldClose(getOpenglID(), true);
     }
 
+    /**
+     * @return boolean - true if the window was triggered to close.
+     */
     public boolean willClose() {
         return GLFW.glfwWindowShouldClose(getOpenglID());
     }
 
+    /**
+     * Function will show the window. Is ignored if the window already shown.
+     */
     public void show() {
         if(!isVisible()) {
             GLFW.glfwShowWindow(getOpenglID());
         }
     }
 
+    /**
+     * Function will hide the window. Is ignored if the window already hidden.
+     */
     public void hide() {
         if(isVisible()) {
             GLFW.glfwHideWindow(getOpenglID());
         }
     }
 
+    /**
+     * @return boolean - the current visible state, true if is shown.
+     */
     public boolean isVisible() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_VISIBLE) == GLFW.GLFW_TRUE;
     }
 
+    /**
+     * @param maximized true if you wish to maximize.
+     */
     public void setMaximized(boolean maximized) {
         if(maximized) {
             GLFW.glfwMaximizeWindow(getOpenglID());
@@ -280,10 +393,16 @@ public abstract class UIWindow {
         this.restore();
     }
 
+    /**
+     * @return boolean - current maximize state, false means it is not maximized.
+     */
     public boolean isMaximized() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_MAXIMIZED) == GLFW.GLFW_TRUE;
     }
 
+    /**
+     * @param iconified true if you wish to iconified the window to the taskbar.
+     */
     public void setIconified(boolean iconified) {
         if(iconified) {
             GLFW.glfwIconifyWindow(getOpenglID());
@@ -292,10 +411,16 @@ public abstract class UIWindow {
         this.restore();
     }
 
+    /**
+     * @return boolean - current iconified state, false means it is not iconified.
+     */
     public boolean isIconified() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE;
     }
 
+    /**
+     * @param focused true if you wish that the window is focused now.
+     */
     public void setFocused(boolean focused) {
         if(focused) {
             GLFW.glfwFocusWindow(getOpenglID());
@@ -304,22 +429,37 @@ public abstract class UIWindow {
         this.restore();
     }
 
+    /**
+     * @return boolean - current focused state, false means it is not focused.
+     */
     public boolean isFocused() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_FOCUSED) == GLFW.GLFW_TRUE;
     }
 
+    /**
+     * @param alwaysOnTop true if the window need always on top like popups, dialogs for important news or viruses :D.
+     */
     public void setAlwaysOnTop(boolean alwaysOnTop) {
         GLFW.glfwSetWindowAttrib(getOpenglID(), GLFW.GLFW_FLOATING, alwaysOnTop ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
     }
 
+    /**
+     * @return boolean - current always top state, false means it is not on top always.
+     */
     public boolean isAlwaysOnTop() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_FLOATING) == GLFW.GLFW_TRUE;
     }
 
+    /**
+     * @param resizeable true if the window should be resized.
+     */
     public void setResizeable(boolean resizeable) {
         GLFW.glfwSetWindowAttrib(getOpenglID(), GLFW.GLFW_RESIZABLE, resizeable ? GLFW.GLFW_TRUE : GLFW.GLFW_FALSE);
     }
 
+    /**
+     * @return boolean - current resizeable state, false means it is not resizeable.
+     */
     public boolean isResizeable() {
         return GLFW.glfwGetWindowAttrib(getOpenglID(), GLFW.GLFW_RESIZABLE) == GLFW.GLFW_TRUE;
     }
@@ -330,6 +470,13 @@ public abstract class UIWindow {
      *
      * ######################################################################## */
 
+    /**
+     * Function to cast the current class to your window type. This is simple
+     * if you write a line with <code>Window window = new Window();</code> you can now use this like
+     * <code>Window window = UIFactory.getWindow("Test").casted();</code>.
+     * @return T - the current window as his class.
+     * @param <T> change type by T construct.
+     */
     @SuppressWarnings("unchecked")
     public <T> T casted() {
         T window = (T) this;
@@ -341,8 +488,24 @@ public abstract class UIWindow {
         return window;
     }
 
+    /**
+     * @since 1.0.0
+     * Record for store important {@link GLFW} stuff like ID or NanoVG context.
+     * @see NanoVG
+     * @see GLFW
+     * @see GL
+     * @author Daniel Ramke
+     * @param openglID the generated window as long address.
+     * @param nvgID the context of {@link NanoVG}.
+     * @param capabilities the current or created {@link GL#createCapabilities()}.
+     */
     record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
 
+    /**
+     * Private function to generate a UID for the window.
+     * @param serialID wish ID can be replaced by null for {@link Class#getSimpleName()}.
+     * @return String - the free ID for this window.
+     */
     private String generateSerialID(String serialID) {
         if(serialID == null) {
             serialID = getClass().getSimpleName();
@@ -361,6 +524,10 @@ public abstract class UIWindow {
         return serialID;
     }
 
+    /**
+     * Private function to print all the needed graphics information we need.
+     * Note at debug log it will print a big list.
+     */
     private void printGraphicCardInformation() {
         List<String> info = new ArrayList<>();
         info.add("OpenGL Version: " + Objects.requireNonNull(GL11.glGetString(GL11.GL_VERSION)).substring(0, 3));
@@ -374,6 +541,10 @@ public abstract class UIWindow {
         logger.list(extendedInfo, "Graphics Extensions", ConsoleColor.CYAN, LogLevel.DEBUG);
     }
 
+    /**
+     * Private function to let wait function for {@link #build()} state.
+     * Needed for function which change {@link GLFW} thinks.
+     */
     private void _wait() {
         try {
             latch.await();
