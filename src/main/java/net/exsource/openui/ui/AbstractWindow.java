@@ -61,7 +61,7 @@ public abstract class AbstractWindow {
         this.height = DEFAULT_HEIGHT;
         this.parent = null;
         this.thread = UIFactory.generateThread(this::run, this);
-        this.thread.start();
+        enable();
     }
 
     protected void run() {
@@ -81,7 +81,6 @@ public abstract class AbstractWindow {
             GLFW.glfwSwapBuffers(openglID);
             GLFW.glfwPollEvents();
         }
-        destroy();
     }
 
     protected abstract void initialize();
@@ -143,6 +142,28 @@ public abstract class AbstractWindow {
 
     public int getHeight() {
         return height;
+    }
+
+    public void enable() {
+        if(isEnabled()) {
+            return;
+        }
+        enabled = true;
+        if(thread != null && !thread.isAlive()) {
+            thread.start();
+        }
+        logger.debug("Enable window " + getIdentifier());
+    }
+
+    public void disable() {
+        if(!isEnabled()) {
+            return;
+        }
+        enabled = false;
+        if(thread != null && thread.isAlive()) {
+            close();
+        }
+        logger.debug("Disable window " + getIdentifier());
     }
 
     public void addChild(AbstractWindow window) {
