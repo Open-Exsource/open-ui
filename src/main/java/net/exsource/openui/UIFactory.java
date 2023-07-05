@@ -1,7 +1,7 @@
 package net.exsource.openui;
 
 import net.exsource.openlogger.Logger;
-import net.exsource.openui.ui.AbstractWindow;
+import net.exsource.openui.ui.UIWindow;
 import net.exsource.openui.ui.frame.Window;
 import org.jetbrains.annotations.NotNull;
 
@@ -18,7 +18,7 @@ public final class UIFactory {
 
     private static final Logger logger = Logger.getLogger();
 
-    private static final Map<String, AbstractWindow> windows = new HashMap<>();
+    private static final Map<String, UIWindow> windows = new HashMap<>();
     private static final Map<String, Thread> threads = new HashMap<>();
 
     /* ########################################################################
@@ -29,37 +29,37 @@ public final class UIFactory {
 
     /**
      * Function called {@link #createWindow(String, String, int, int, Class)} as parent function.
-     * @param type the window specified type. Need to inherit {@link AbstractWindow}.
+     * @param type the window specified type. Need to inherit {@link UIWindow}.
      * @return T - the create window as correct java object type.
      * @param <T> override the function return value to your class type.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static <T extends AbstractWindow> T createWindow(Class<T> type) {
-        return createWindow(null, null, AbstractWindow.DEFAULT_WIDTH, AbstractWindow.DEFAULT_HEIGHT, type);
+    public static <T extends UIWindow> T createWindow(Class<T> type) {
+        return createWindow(null, null, UIWindow.DEFAULT_WIDTH, UIWindow.DEFAULT_HEIGHT, type);
     }
 
     /**
      * Function called {@link #createWindow(String, String, int, int, Class)} as parent function.
      * @param title the title of the window, can be null will be replaced by {@link Class#getSimpleName()}.
-     * @param type the window specified type. Need to inherit {@link AbstractWindow}.
+     * @param type the window specified type. Need to inherit {@link UIWindow}.
      * @return T - the create window as correct java object type.
      * @param <T> override the function return value to your class type.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static <T extends AbstractWindow> T createWindow(String title, Class<T> type) {
-        return createWindow(null, title, AbstractWindow.DEFAULT_WIDTH, AbstractWindow.DEFAULT_HEIGHT, type);
+    public static <T extends UIWindow> T createWindow(String title, Class<T> type) {
+        return createWindow(null, title, UIWindow.DEFAULT_WIDTH, UIWindow.DEFAULT_HEIGHT, type);
     }
 
     /**
      * Function called {@link #createWindow(String, String, int, int, Class)} as parent function.
      * @param width the window frame width.
      * @param height the window frame height.
-     * @param type the window specified type. Need to inherit {@link AbstractWindow}.
+     * @param type the window specified type. Need to inherit {@link UIWindow}.
      * @return T - the create window as correct java object type.
      * @param <T> override the function return value to your class type.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static <T extends AbstractWindow> T createWindow(int width, int height, Class<T> type) {
+    public static <T extends UIWindow> T createWindow(int width, int height, Class<T> type) {
         return createWindow(null, null, width, height, type);
     }
 
@@ -68,12 +68,12 @@ public final class UIFactory {
      * @param title the title of the window, can be null will be replaced by {@link Class#getSimpleName()}.
      * @param width the window frame width.
      * @param height the window frame height.
-     * @param type the window specified type. Need to inherit {@link AbstractWindow}.
+     * @param type the window specified type. Need to inherit {@link UIWindow}.
      * @return T - the create window as correct java object type.
      * @param <T> override the function return value to your class type.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static <T extends AbstractWindow> T createWindow(String title, int width, int height, Class<T> type) {
+    public static <T extends UIWindow> T createWindow(String title, int width, int height, Class<T> type) {
         return createWindow(null, title, width, height, type);
     }
 
@@ -87,13 +87,13 @@ public final class UIFactory {
      * @param title the title of the window, can be null will be replaced by {@link Class#getSimpleName()}.
      * @param width the window frame width.
      * @param height the window frame height.
-     * @param type the window specified type. Need to inherit {@link AbstractWindow}.
+     * @param type the window specified type. Need to inherit {@link UIWindow}.
      * @return T - the create window as correct java object type.
      * @param <T> override the function return value to your class type.
-     * @see AbstractWindow
+     * @see UIWindow
      */
     @SuppressWarnings("unchecked")
-    public static <T extends AbstractWindow> T createWindow(String ID, String title, int width, int height, Class<T> type) {
+    public static <T extends UIWindow> T createWindow(String ID, String title, int width, int height, Class<T> type) {
         T window;
 
         if(type != null) {
@@ -125,9 +125,9 @@ public final class UIFactory {
      * Note that this function is called at the {@link #} function and his
      * overloaded functions.
      * @param window the window which needed registering.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static void registerWindow(@NotNull AbstractWindow window) {
+    public static void registerWindow(@NotNull UIWindow window) {
         if(containsWindow(window)) {
             logger.warn("There is a window with the same name!");
             return;
@@ -140,17 +140,17 @@ public final class UIFactory {
     /**
      * Function used {@link #unregisterWindow(String)} to work.
      * @param window will use as identifier.
-     * @see AbstractWindow
+     * @see UIWindow
      */
-    public static void unregisterWindow(@NotNull AbstractWindow window) {
+    public static void unregisterWindow(@NotNull UIWindow window) {
         unregisterWindow(window.getIdentifier());
     }
 
     /**
-     * Function unregistered a window and called its {@link AbstractWindow#destroy()} function.
+     * Function unregistered a window and called its {@link UIWindow#destroy()} function.
      * If you doesn't need this window anymore than call this function!
      * @param ID the window identifier.
-     * @see AbstractWindow
+     * @see UIWindow
      */
     public static void unregisterWindow(@NotNull String ID) {
         if(!containsWindow(ID)) {
@@ -166,9 +166,9 @@ public final class UIFactory {
      * Function generates a list object from the {@link #windows} map.
      * @return List<AbstractWindow> - a list of all known windows.
      */
-    public static List<AbstractWindow> getWindowList() {
-        List<AbstractWindow> windowList = new ArrayList<>();
-        for(Map.Entry<String, AbstractWindow> entry : windows.entrySet()) {
+    public static List<UIWindow> getWindowList() {
+        List<UIWindow> windowList = new ArrayList<>();
+        for(Map.Entry<String, UIWindow> entry : windows.entrySet()) {
             windowList.add(entry.getValue());
         }
         return windowList;
@@ -179,7 +179,7 @@ public final class UIFactory {
      * @param window window to check.
      * @return boolean - check state true means it was found.
      */
-    public static boolean containsWindow(@NotNull AbstractWindow window) {
+    public static boolean containsWindow(@NotNull UIWindow window) {
         return getWindow(window) != null;
     }
 
@@ -197,7 +197,7 @@ public final class UIFactory {
      * @param window to get the identifier for searching.
      * @return AbstractWindow - founded window can be null.
      */
-    public static AbstractWindow getWindow(@NotNull AbstractWindow window) {
+    public static UIWindow getWindow(@NotNull UIWindow window) {
         return getWindow(window.getIdentifier());
     }
 
@@ -206,14 +206,14 @@ public final class UIFactory {
      * @param ID to searched window identifier.
      * @return AbstractWindow - founded window can be null.
      */
-    public static AbstractWindow getWindow(@NotNull String ID) {
+    public static UIWindow getWindow(@NotNull String ID) {
         return windows.get(ID);
     }
 
     /**
      * @return Map<String, AbstractWindow> - the generated map with all the windows we used.
      */
-    public static Map<String, AbstractWindow> getWindows() {
+    public static Map<String, UIWindow> getWindows() {
         return windows;
     }
 
@@ -231,10 +231,10 @@ public final class UIFactory {
      * @param run the runnable function, in the most cases run().
      * @param window the window which will be stored this thread.
      * @return Thread - a java thread for separate working.
-     * @see AbstractWindow
+     * @see UIWindow
      * @see Thread
      */
-    public static Thread generateThread(@NotNull Runnable run, @NotNull AbstractWindow window) {
+    public static Thread generateThread(@NotNull Runnable run, @NotNull UIWindow window) {
         Thread thread = null;
         if(hasThread(window)) {
             logger.warn("Window " + window.getIdentifier() + ", already have an thread!");
@@ -255,7 +255,7 @@ public final class UIFactory {
      * @param window which is checked.
      * @return boolean - true if the window have a thread.
      */
-    public static boolean hasThread(@NotNull AbstractWindow window) {
+    public static boolean hasThread(@NotNull UIWindow window) {
         return hasThread(window.getIdentifier());
     }
 
@@ -271,7 +271,7 @@ public final class UIFactory {
      * @param window to get identifier.
      * @return Thread - current window {@link Thread} can be null if not a main window.
      */
-    public static Thread getThread(@NotNull AbstractWindow window) {
+    public static Thread getThread(@NotNull UIWindow window) {
         return getThread(window.getIdentifier());
     }
 
