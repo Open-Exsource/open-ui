@@ -1,18 +1,15 @@
 package net.exsource.openui.ui;
 
-import net.exsource.openui.UIEngine;
-import net.exsource.openui.utils.Timer;
-
-//Todo: better system for fps loop.
 public abstract class AbstractWindow extends UIWindow {
 
     private FPS fpsCap;
-    private final Timer timer;
+    private int fps;
+
+    private float frameTime;
 
     public AbstractWindow(String identifier) {
         super(identifier);
         this.setFpsCap(FPS.F_60);
-        this.timer = new Timer();
     }
 
     protected abstract void input();
@@ -26,44 +23,56 @@ public abstract class AbstractWindow extends UIWindow {
 
     @Override
     protected void loop() {
-        float delta;
-        float accumulator = 0f;
-        int in_CAP = fpsCap.equals(FPS.F_UNLIMITED) ? 500 : fpsCap.getTimesAsInt();
-        float interval = 1f / in_CAP;
+        final long nanosecond = 1_000_000_000L;
+        long lastTime = System.nanoTime();
+        double unprocessedTime = 0;
+
+        int frames = 0;
+        long frameCounter = 0;
 
         while (!willClose()) {
-            delta = timer.getDelta();
-            accumulator += delta;
+            boolean nowRender = false;
+            long startTime = System.nanoTime();
+            long passedTime = startTime - lastTime;
+            lastTime = startTime;
+
+            unprocessedTime += passedTime / (double) nanosecond;
+            frameCounter += passedTime;
 
             input();
 
-            while (accumulator >= interval) {
-                update();
-                timer.updateUPS();
-                accumulator -= interval;
+            while (unprocessedTime > frameTime) {
+                nowRender = true;
+                unprocessedTime -= frameTime;
+
+                if(frameCounter >= nanosecond) {
+                    fps = frames;
+                    frames = 0;
+                    frameCounter = 0;
+                }
             }
 
-            timer.updateFPS();
-
-            timer.update();
-
-            UIEngine.sync(in_CAP, timer);
+            if(nowRender) {
+                update();
+                frames++;
+            }
         }
     }
 
     public void setFpsCap(FPS fpsCap) {
         if(fpsCap == null) {
-            fpsCap = FPS.F_UNLIMITED;
+            fpsCap = FPS.F_1000;
         }
         this.fpsCap = fpsCap;
+        this.frameTime = 1.0f / fpsCap.getTimesAsInt();
     }
 
     public FPS getFpsCap() {
         return fpsCap;
     }
 
-    public int getFPS() {
-        return timer.getFPS();
+    public int getFps() {
+        return fps;
     }
 
     public enum FPS {
@@ -77,7 +86,8 @@ public abstract class AbstractWindow extends UIWindow {
         F_165(165.0D),
         F_240(240.0D),
         F_265(265.0D),
-        F_UNLIMITED(-1.0D);
+        F_500(500.0D),
+        F_1000(1000.0D);
 
         private final double times;
 

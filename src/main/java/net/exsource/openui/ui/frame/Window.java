@@ -7,7 +7,7 @@ public class Window extends AbstractWindow {
 
     public Window(String identifier) {
         super(identifier);
-        setFpsCap(FPS.F_UNLIMITED);
+        setFpsCap(FPS.F_60);
     }
 
     @Override
@@ -17,7 +17,7 @@ public class Window extends AbstractWindow {
 
     @Override
     protected void update() {
-        setTitle(getClass().getSimpleName() + ", FPS: " + getFPS());
+        setTitle(getClass().getSimpleName() + ", FPS: " + getFps());
         GLFW.glfwSwapBuffers(getOpenglID());
         GLFW.glfwPollEvents();
     }
