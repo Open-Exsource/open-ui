@@ -35,6 +35,7 @@ public interface Renderer {
      * @param <T> - the key word will be replaced by class object.
      * @exception Exception thrown if the class can't be found or casting.
      */
+    @SuppressWarnings("unchecked")
     default <T extends Renderer> T cast(Class<T> type) {
         T value;
         Logger logger = Logger.getLogger();
