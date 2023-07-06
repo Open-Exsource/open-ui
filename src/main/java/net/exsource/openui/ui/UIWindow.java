@@ -6,7 +6,12 @@ import net.exsource.openlogger.util.ConsoleColor;
 import net.exsource.openui.OpenUI;
 import net.exsource.openui.UIFactory;
 import net.exsource.openui.enums.Errors;
+import net.exsource.openui.events.windows.WindowCreateEvent;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
+import net.exsource.openui.logic.AbstractRenderer;
+import net.exsource.openui.logic.Renderer;
+import net.exsource.openui.ui.frame.Window;
+import net.exsource.openutils.event.EventManager;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.nanovg.NanoVG;
@@ -25,7 +30,17 @@ import java.util.concurrent.CountDownLatch;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
+ * This class is used to create new windows like {@link AbstractWindow}. You choose this class
+ * if you need to write your own frame system for game loops or something. If you wish
+ * to use our format then use the {@link AbstractWindow} class instance of this. Because the {@link AbstractWindow}
+ * class contains an own frame system which allows to change the frame rates. Note that this class
+ * doesn't contain a while loop for rendering or update the window. You should to create it by ur self.
+ * If you need help by this then look at the official site of exsource.de or lwjgl.
+ * It is recommended to use our {@link AbstractWindow} class for create own windows look at
+ * {@link Window} for the work usage.
  * @since 1.0.0
+ * @see CountDownLatch
+ * @see Thread
  * @author Daniel Ramke
  */
 public abstract class UIWindow {
@@ -41,8 +56,6 @@ public abstract class UIWindow {
     private final String identifier;
     private long openglID;
 
-    private final List<Dialog> dialogs = new ArrayList<>();
-
     protected Context context;
 
     private String title;
@@ -51,6 +64,8 @@ public abstract class UIWindow {
     private int height;
 
     private boolean created;
+
+    private final List<Renderer> renderers = new ArrayList<>();
 
     /* ########################################################################
      *
@@ -223,55 +238,6 @@ public abstract class UIWindow {
 
     /* ########################################################################
      *
-     *                               Dialogs
-     *
-     * ######################################################################## */
-
-    public void addDialog(@NotNull Dialog dialog) {
-
-    }
-
-    public void removeDialog(@NotNull Dialog dialog) {
-
-    }
-
-    public void removeDialog(@NotNull String ID) {
-
-    }
-
-    public boolean hasDialog(@NotNull Dialog dialog) {
-        return hasDialog(dialog.getIdentifier());
-    }
-
-    public boolean hasDialog(@NotNull String ID) {
-        return getDialog(ID) != null;
-    }
-
-    public Dialog getDialog(@NotNull Dialog dialog) {
-        return getDialog(dialog.getIdentifier());
-    }
-
-    public Dialog getDialog(@NotNull String ID) {
-        Dialog dialog = null;
-        for(Dialog entry : dialogs) {
-            if(entry.getIdentifier().equals(ID)) {
-                dialog = entry;
-                break;
-            }
-        }
-        return dialog;
-    }
-
-    public void clearDialogs() {
-        dialogs.clear();
-    }
-
-    public List<Dialog> getDialogs() {
-        return dialogs;
-    }
-
-    /* ########################################################################
-     *
      *                           Default Functions
      *
      * ######################################################################## */
@@ -294,12 +260,13 @@ public abstract class UIWindow {
         }
 
         //Todo: register callbacks
-        //Todo: register renderers (default)
+        loadDefaultRenderers();
 
         GLFW.glfwMakeContextCurrent(openglID);
         GLFW.glfwSwapInterval(0);
         logger.info("Window HID=" + openglID + ", named=" + getIdentifier());
         this.created = true;
+        EventManager.callEvent(new WindowCreateEvent(this));
         latch.countDown();
     }
 
@@ -328,6 +295,133 @@ public abstract class UIWindow {
      */
     protected void calculateViewPort() {
         GL11.glViewport(0, 0, getWidth(), (int) getHeight());
+    }
+
+    /* ########################################################################
+     *
+     *                               Renderers
+     *
+     * ######################################################################## */
+
+    /**
+     * Function to add renderer to the current window. Choose a render template, {@link Renderer} is a
+     * interface and can't be used by itself. Our recommended renderer class is {@link AbstractRenderer} which
+     * contains more useful functions.
+     * The function will return if the given renderer already exist.
+     * @param renderer the renderer to add.
+     * @see Renderer
+     * @see AbstractRenderer
+     */
+    public void addRenderer(@NotNull Renderer renderer) {
+        if(hasRenderer(renderer)) {
+            logger.warn("Renderer " + renderer.getName() + ", is already included at " + getIdentifier());
+            return;
+        }
+
+        renderers.add(renderer);
+        logger.debug("Added new renderer " + renderer.getName() + ", to window " + getIdentifier());
+    }
+
+    /**
+     * Function removes a existing renderer which is running in the window. Note that
+     * the {@link Renderer} will call his {@link Renderer#dispose()} function before he will
+     * remove.
+     * The function will return if the given renderer not exist.
+     * @param renderer the renderer instance itself as identifier.
+     * @see Renderer
+     */
+    public void removeRenderer(@NotNull Renderer renderer) {
+        removeRenderer(renderer.getName());
+    }
+
+    /**
+     * Function removes a existing renderer which is running in the window. Note that
+     * the {@link Renderer} will call his {@link Renderer#dispose()} function before he will
+     * remove.
+     * The function will return if the given renderer not exist.
+     * @param name the renderer name as identifier.
+     * @see Renderer
+     */
+    public void removeRenderer(@NotNull String name) {
+        if(!hasRenderer(name)) {
+            logger.warn("Renderer " + name + ", is not included at " + getIdentifier());
+            return;
+        }
+
+        Renderer renderer = getRenderer(name);
+        renderer.dispose();
+        renderers.remove(renderer);
+        logger.debug("Removed renderer " + renderer.getName() + ", from window " + getIdentifier());
+    }
+
+    /**
+     * Function remove all existing renderers in the window.
+     * The {@link Renderer} will call {@link Renderer#dispose()} before he is removing.
+     * @see Renderer
+     */
+    public void removeAllRenders() {
+        for(Renderer renderer : renderers) {
+            renderer.dispose();
+        }
+        renderers.clear();
+        logger.debug("Removed all renderers from window " + getIdentifier());
+    }
+
+    /**
+     * Function checks if a {@link Renderer} exist in the window or not.
+     * @param renderer the renderer as identifier.
+     * @return boolean - true if the renderer was found.
+     * @see Renderer
+     */
+    public boolean hasRenderer(@NotNull Renderer renderer) {
+        return hasRenderer(renderer.getName());
+    }
+
+    /**
+     * Function checks if a {@link Renderer} exist in the window or not.
+     * @param name the renderer name as identifier.
+     * @return boolean - true if the renderer was found.
+     * @see Renderer
+     */
+    public boolean hasRenderer(@NotNull String name) {
+        return getRenderer(name) != null;
+    }
+
+    /**
+     * Function search for a renderer in the {@link #getRenderers()} list with the given
+     * renderer parameter. If the renderer was found it will return this renderer.
+     * The return value can be null if the renderer wasn't found.
+     * @param renderer the renderer as identifier.
+     * @return Renderer - the founded renderer object.
+     * @see Renderer
+     */
+    public Renderer getRenderer(@NotNull Renderer renderer) {
+        return getRenderer(renderer.getName());
+    }
+
+    /**
+     * Function search for a renderer in the {@link #getRenderers()} list with the given
+     * name parameter. If the renderer was found it will return this renderer.
+     * The return value can be null if the renderer wasn't found.
+     * @param name the renderer name as identifier.
+     * @return Renderer - the founded renderer object.
+     * @see Renderer
+     */
+    public Renderer getRenderer(@NotNull String name) {
+        Renderer renderer = null;
+        for(Renderer entry : renderers) {
+            if(entry.getName().equals(name)) {
+                renderer = entry;
+            }
+        }
+        return renderer;
+    }
+
+    /**
+     * @return List<Renderer> - all known renderers for this window.
+     */
+    public List<Renderer> getRenderers() {
+        return renderers;
     }
 
     /* ########################################################################
@@ -486,6 +580,10 @@ public abstract class UIWindow {
             logger.error(exception);
         }
         return window;
+    }
+
+    private void loadDefaultRenderers() {
+        //Todo: put here all UI renderers.
     }
 
     /**

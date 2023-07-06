@@ -7,6 +7,7 @@ import net.exsource.openui.annotations.init.PostInit;
 import net.exsource.openui.annotations.AnnotationProcessor;
 import net.exsource.openui.annotations.init.PreInit;
 import net.exsource.openui.enums.AvailableArguments;
+import net.exsource.openui.enums.Errors;
 import net.exsource.openui.events.UIPreLoadEvent;
 import net.exsource.openui.exception.OpenUIInitializeException;
 import net.exsource.openutils.event.EventManager;
@@ -46,6 +47,14 @@ public final class OpenUI {
         AnnotationProcessor.invokeAnnotation(getMainClass(), PostInit.class);
         called = true;
         logger.info("Successfully launch OpenUI in class: " + ConsoleColor.GREEN + className + ConsoleColor.RESET);
+    }
+
+    public static void terminate() {
+        exit(Errors.OK);
+    }
+
+    public static void exit(Errors code) {
+        exit(code.getCode());
     }
 
     public static void exit(int programCode) {

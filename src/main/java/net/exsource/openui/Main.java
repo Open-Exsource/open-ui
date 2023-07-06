@@ -8,6 +8,7 @@ public class Main {
         OpenUI.launch(args);
 
         Window window = UIFactory.createWindow(Window.class);
+
     }
 
 }
