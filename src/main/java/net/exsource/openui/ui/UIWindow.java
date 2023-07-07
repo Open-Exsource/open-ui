@@ -10,6 +10,7 @@ import net.exsource.openui.events.windows.WindowCreateEvent;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
 import net.exsource.openui.logic.AbstractRenderer;
 import net.exsource.openui.logic.Renderer;
+import net.exsource.openui.ui.component.Component;
 import net.exsource.openui.ui.frame.Window;
 import net.exsource.openutils.event.EventManager;
 import org.jetbrains.annotations.NotNull;
@@ -28,6 +29,7 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 
 import static org.lwjgl.system.MemoryUtil.NULL;
+import static net.exsource.openui.logic.callback.Callbacks.*;
 
 /**
  * This class is used to create new windows like {@link AbstractWindow}. You choose this class
@@ -66,6 +68,25 @@ public abstract class UIWindow {
     private boolean created;
 
     private final List<Renderer> renderers = new ArrayList<>();
+    private final List<Component> components = new ArrayList<>();
+
+    private WindowRefreshCallback refreshCallback;
+    private WindowSizeCallback sizeCallback;
+    private WindowCloseCallback closeCallback;
+    private WindowPositionCallback positionCallback;
+    private WindowFocusCallback focusCallback;
+    private WindowIconifyCallback iconifyCallback;
+    private WindowMaximizedCallback maximizedCallback;
+    private FrameBufferSizeCallback frameBufferSizeCallback;
+
+    private KeyCallback keyCallback;
+    private CharCallback charCallback;
+    private CharModsCallback charModsCallback;
+
+    private MouseButtonCallback mouseButtonCallback;
+    private MouseEnteredCallback mouseEnteredCallback;
+    private MousePositionCallback mousePositionCallback;
+    private ScrollCallback scrollCallback;
 
     /* ########################################################################
      *
@@ -259,7 +280,7 @@ public abstract class UIWindow {
             return;
         }
 
-        //Todo: register callbacks
+        loadDefaultCallbacks();
         loadDefaultRenderers();
 
         GLFW.glfwMakeContextCurrent(openglID);
@@ -426,6 +447,123 @@ public abstract class UIWindow {
 
     /* ########################################################################
      *
+     *                               Components
+     *
+     * ######################################################################## */
+
+    /**
+     * Function will add a new component to the window. Use this for build up ur UI.
+     * @param component the component to add.
+     * @apiNote Here will come more information if the component system more build.
+     * @see Component
+     */
+    public void addComponent(@NotNull Component component) {
+        if(hasComponent(component)) {
+            logger.warn("The same component exist with the name " + component.getID());
+            return;
+        }
+
+        components.add(component);
+        logger.debug("Added new component " + component.getID());
+    }
+
+    /**
+     * Function removes a specified component form the window by the given {@link Component}.
+     * If the component wasn't found
+     * at the {@link #getComponents()} list, then it will return and display a warning log.
+     * @param component the identifier for find the to delete component.
+     * @see Component
+     */
+    public void removeComponent(@NotNull Component component) {
+        removeComponent(component.getID());
+    }
+
+    /**
+     * Function removes a specified component form the window by the given ID.
+     * The ID is {@link Component#getID()} in this case. If the component wasn't found
+     * at the {@link #getComponents()} list, then it will return and display a warning log.
+     * @param ID the identifier for find the to delete component.
+     * @see Component
+     */
+    public void removeComponent(@NotNull String ID) {
+        if(!hasComponent(ID)) {
+            logger.warn("The component " + ID + " dosen't exist in window " + getIdentifier());
+            return;
+        }
+
+        components.remove(getComponent(ID));
+        logger.debug("Removed component " + ID);
+    }
+
+    /**
+     * Function removes all components from the window. Note that this function is
+     * a good usage at the {@link #destroy()} function. Because there we don't need the
+     * components anymore.
+     */
+    public void removeAllComponents() {
+        components.clear();
+    }
+
+    /**
+     * Function checks the {@link #getComponents()} list for a specified {@link Component} by itself as object.
+     * @param component the {@link Component} need to be used.
+     * @return boolean - true if it was found in the list.
+     * @see Component
+     */
+    public boolean hasComponent(@NotNull Component component) {
+        return getComponent(component) != null;
+    }
+
+    /**
+     * Function checks the {@link #getComponents()} list for a specified {@link Component} by ID.
+     * @param ID the {@link Component#getID()} need to be used.
+     * @return boolean - true if it was found in the list.
+     * @see Component
+     */
+    public boolean hasComponent(@NotNull String ID) {
+        return getComponent(ID) != null;
+    }
+
+    /**
+     * Function searched for a component in the {@link #getComponents()} list by {@link Component} as key parameter.
+     * It will call {@link #getComponent(String)} and include {@link Component#getID()} as the parameter.
+     * Can return null if the component wasn't found.
+     * @param component the identifier for the component we ar searching for.
+     * @return Component - the object which was found, warning can be null!
+     * @see Component
+     */
+    public Component getComponent(@NotNull Component component) {
+        return getComponent(component.getID());
+    }
+
+    /**
+     * Function searched for a component in the {@link #getComponents()} list by ID as key parameter.
+     * If the function find a component with the exact same ID it will return it.
+     * Can return null if the component wasn't found.
+     * @param ID the identifier for the component we ar searching for.
+     * @return Component - the object which was found, warning can be null!
+     * @see Component
+     */
+    public Component getComponent(@NotNull String ID) {
+        Component component = null;
+        for(Component entry : components) {
+            if(entry.getID().equals(ID)) {
+                component = entry;
+                break;
+            }
+        }
+        return component;
+    }
+
+    /**
+     * @return List<Component> - all components which ar used by the window.
+     */
+    public List<Component> getComponents() {
+        return components;
+    }
+
+    /* ########################################################################
+     *
      *                          GLFW Getter / Setter
      *
      * ######################################################################## */
@@ -560,6 +698,276 @@ public abstract class UIWindow {
 
     /* ########################################################################
      *
+     *                     Callbacks / Public Functions
+     *
+     * ######################################################################## */
+
+    /**
+     * @return WindowCloseCallback - the callback if the window will close.
+     */
+    public WindowCloseCallback getCloseCallback() {
+        return closeCallback;
+    }
+
+    /**
+     * @return WindowFocusCallback - the callback if the window will change the focus state.
+     */
+    public WindowFocusCallback getFocusCallback() {
+        return focusCallback;
+    }
+
+    /**
+     * @return WindowIconifyCallback - the callback if the window change to iconified.
+     */
+    public WindowIconifyCallback getIconifyCallback() {
+        return iconifyCallback;
+    }
+
+    /**
+     * @return WindowMaximizedCallback - the callback if the window will be change to maximized or minimized.
+     */
+    public WindowMaximizedCallback getMaximizedCallback() {
+        return maximizedCallback;
+    }
+
+    /**
+     * @return WindowPositionCallback - the callback if the window position is change. Warning update many times!
+     */
+    public WindowPositionCallback getPositionCallback() {
+        return positionCallback;
+    }
+
+    /**
+     * @return WindowSizeCallback - the callback if the window size will be change this will call too by {@link #getMaximizedCallback()}.
+     */
+    public WindowSizeCallback getSizeCallback() {
+        return sizeCallback;
+    }
+
+    /**
+     * @return WindowRefreshCallback - the callback if the window refreshed most call by {@link #restore()}.
+     */
+    public WindowRefreshCallback getRefreshCallback() {
+        return refreshCallback;
+    }
+
+    /**
+     * @return FrameBufferSizeCallback - same call at {@link #getSizeCallback()}.
+     */
+    public FrameBufferSizeCallback getFrameBufferSizeCallback() {
+        return frameBufferSizeCallback;
+    }
+
+    /**
+     * @return KeyCallback - the callback if the window detect key inputs.
+     */
+    public KeyCallback getKeyCallback() {
+        return keyCallback;
+    }
+
+    /**
+     * @return CharCallback - the callback if the window detect key inputs but its give us the right char.
+     */
+    public CharCallback getCharCallback() {
+        return charCallback;
+    }
+
+    /**
+     * @return CharModsCallback - the callback if the window detect key combos like CTRL + C
+     */
+    public CharModsCallback getCharModsCallback() {
+        return charModsCallback;
+    }
+
+    /**
+     * @return MouseButtonCallback - the callback if the window detect mouse button inputs.
+     */
+    public MouseButtonCallback getMouseButtonCallback() {
+        return mouseButtonCallback;
+    }
+
+    /**
+     * @return MousePositionCallback - the callback if the mouse entered the window and is moving.
+     */
+    public MousePositionCallback getMousePositionCallback() {
+        return mousePositionCallback;
+    }
+
+    /**
+     * @return MouseEnteredCallback - the callback if the mouse entered the window.
+     */
+    public MouseEnteredCallback getMouseEnteredCallback() {
+        return mouseEnteredCallback;
+    }
+
+    /**
+     * @return ScrollCallback - the callback if the mouse entered the window and is scrolling.
+     */
+    public ScrollCallback getScrollCallback() {
+        return scrollCallback;
+    }
+
+    /* ########################################################################
+     *
+     *                    Callbacks / Private Functions
+     *
+     * ######################################################################## */
+
+    /**
+     * This trigger is called if the window change his current size.
+     * @param windowID the window which is resizing.
+     * @param width the new width.
+     * @param height the new height.
+     */
+    protected void sizeCallback(long windowID, int width, int height) {
+
+    }
+
+    /**
+     * This trigger is called if the window change his current position.
+     * @param windowID the window which is reposing.
+     * @param positionX the new x position on the desktop.
+     * @param positionY the new y position on the desktop.
+     */
+    protected void positionCallback(long windowID, int positionX, int positionY) {
+
+    }
+
+    /**
+     * This trigger is called if the window refreshed by maximize or iconified.
+     * @param windowID the window which is refreshed.
+     */
+    protected void refreshCallback(long windowID) {
+
+    }
+
+    /**
+     * This trigger is called before the window is closing.
+     * @param windowID the window which will close.
+     */
+    protected void closeCallback(long windowID) {
+
+    }
+
+    /**
+     * This trigger is called if the window is focused or lost his focus.
+     * @param windowID the window which focus.
+     * @param focus the current focus state.
+     */
+    protected void focusCallback(long windowID, boolean focus) {
+
+    }
+
+    /**
+     * This trigger is called if the window set to iconified.
+     * @param windowID the window which the iconified state.
+     * @param iconify the current state.
+     */
+    protected void iconifyCallback(long windowID, boolean iconify) {
+
+    }
+
+    /**
+     * This trigger is called if the window to maximize screen or leave.
+     * @param windowID the window which the maximized state.
+     * @param maximize the current state
+     */
+    protected void maximizedCallback(long windowID, boolean maximize) {
+
+    }
+
+    /**
+     * This trigger is called if the window change his current size inner box.
+     * @param windowID the window which is resizing.
+     * @param width the new width.
+     * @param height the new height.
+     */
+    protected void frameBufferSizeCallback(long windowID, int width, int height) {
+
+    }
+
+    /**
+     * This trigger is called if the window detected keyboard input.
+     * @param windowID the window which detect key inputs.
+     * @param key the key as integer (char)
+     * @param scancode the final key id.
+     * @param action the current action
+     *               <ul>
+     *               <li><span style="color: #1ac7b0">GLFW_PRESS</span> this means you only tipped the key.</li>
+     *               <li><span style="color: #1ac7b0">GLFW_REPEAT</span> this means you hold the key pressed.</li>
+     *               <li><span style="color: #1ac7b0">GLFW_RELEASE</span> this means you released the key.</li>
+     *               </ul>
+     * @param mods the hotkey which is used example: CTRL + A = 2.
+     */
+    protected void keyCallback(long windowID, int key, int scancode, int action, int mods) {
+
+    }
+
+    /**
+     * This trigger is called if the window detect key input if is a char.
+     * @param windowID the window which detect the key input.
+     * @param codepoint the char which was tipped.
+     */
+    protected void charCallback(long windowID, int codepoint) {
+
+    }
+
+    /**
+     * This trigger is called if the window detect key input if is a char type or mod type.
+     * @param windowID the window which detect the key input.
+     * @param codepoint the char which was tipped.
+     * @param mods the current mod like SHIFT + a = A | 1.
+     */
+    protected void charModsCallback(long windowID, int codepoint, int mods) {
+
+    }
+
+    /**
+     * This trigger is called if the window detect mouse inputs.
+     * @param windowID the window which detect mouse inputs.
+     * @param button the pressed and released button.
+     * @param action the current action
+     *               <ul>
+     *               <li><span style="color: #1ac7b0">GLFW_PRESS</span> this means you only tipped the key.</li>
+     *               <li><span style="color: #1ac7b0">GLFW_RELEASE</span> this means you released the key.</li>
+     *               </ul>
+     * @param mods the hotkey which is used example: CTRL + Button0 = 2.
+     */
+    protected void mouseButtonCallback(long windowID, int button, int action, int mods) {
+
+    }
+
+    /**
+     * This trigger is called if the mouse entered the window.
+     * @param windowID the window which detect mouse movement.
+     * @param positionX the current mouse x position on the window screen.
+     * @param positionY the current mouse y position on the window screen.
+     */
+    protected void mousePositionCallback(long windowID, double positionX, double positionY) {
+
+    }
+
+    /**
+     * This trigger is called if the mouse entered and leaved the window border.
+     * @param windowID the window which detect the entered and the leaving.
+     * @param entered the state of the mouse entered.
+     */
+    protected void mouseEnteredCallback(long windowID, boolean entered) {
+
+    }
+
+    /**
+     * This trigger is called if the mouse on the window and scroll.
+     * @param windowID the window which detect the scroll from the entered mouse.
+     * @param xOffset the x offset of the scroll.
+     * @param yOffset the y offset of the scroll.
+     */
+    protected void scrollCallback(long windowID, double xOffset, double yOffset) {
+
+    }
+
+    /* ########################################################################
+     *
      *                             Private / Misc
      *
      * ######################################################################## */
@@ -582,8 +990,86 @@ public abstract class UIWindow {
         return window;
     }
 
+    /**
+     * Private function to register the default renders.
+     * Default renderers include all {@link AbstractRenderer} as parent class.
+     * The most of registered renderers here start with UI in the name.
+     * @see AbstractRenderer
+     */
     private void loadDefaultRenderers() {
         //Todo: put here all UI renderers.
+    }
+
+    /**
+     * Private function to load all existing callbacks for the window.
+     * This is absolut needed for interact with the current {@link UIWindow}.
+     * If you let this out it will doesn't work anymore!
+     */
+    private void loadDefaultCallbacks() {
+        sizeCallback = new WindowSizeCallback();
+        sizeCallback.add(GLFW.glfwSetWindowSizeCallback(openglID, sizeCallback));
+        sizeCallback.add(this::sizeCallback);
+
+        positionCallback = new WindowPositionCallback();
+        positionCallback.add(GLFW.glfwSetWindowPosCallback(openglID, positionCallback));
+        positionCallback.add(this::positionCallback);
+
+        closeCallback = new WindowCloseCallback();
+        closeCallback.add(GLFW.glfwSetWindowCloseCallback(openglID, closeCallback));
+        closeCallback.add(this::closeCallback);
+
+        refreshCallback = new WindowRefreshCallback();
+        refreshCallback.add(GLFW.glfwSetWindowRefreshCallback(openglID, refreshCallback));
+        refreshCallback.add(this::refreshCallback);
+
+        focusCallback = new WindowFocusCallback();
+        focusCallback.add(GLFW.glfwSetWindowFocusCallback(openglID, focusCallback));
+        focusCallback.add(this::focusCallback);
+
+        iconifyCallback = new WindowIconifyCallback();
+        iconifyCallback.add(GLFW.glfwSetWindowIconifyCallback(openglID, iconifyCallback));
+        iconifyCallback.add(this::iconifyCallback);
+
+        maximizedCallback = new WindowMaximizedCallback();
+        maximizedCallback.add(GLFW.glfwSetWindowMaximizeCallback(openglID, maximizedCallback));
+        maximizedCallback.add(this::maximizedCallback);
+
+        frameBufferSizeCallback = new FrameBufferSizeCallback();
+        frameBufferSizeCallback.add(GLFW.glfwSetFramebufferSizeCallback(openglID, frameBufferSizeCallback));
+        frameBufferSizeCallback.add(this::frameBufferSizeCallback);
+
+        charCallback = new CharCallback();
+        charCallback.add(GLFW.glfwSetCharCallback(openglID, charCallback));
+        charCallback.add(this::charCallback);
+
+        charModsCallback = new CharModsCallback();
+        charModsCallback.add(GLFW.glfwSetCharModsCallback(openglID, charModsCallback));
+        charModsCallback.add(this::charModsCallback);
+
+        keyCallback = new KeyCallback();
+        keyCallback.add(GLFW.glfwSetKeyCallback(openglID, keyCallback));
+        keyCallback.add(this::keyCallback);
+        // keyCallback.add(KeyBoard::callback);
+
+        mousePositionCallback = new MousePositionCallback();
+        mousePositionCallback.add(GLFW.glfwSetCursorPosCallback(openglID, mousePositionCallback));
+        mousePositionCallback.add(this::mousePositionCallback);
+        // mousePositionCallback.add(Mouse::positionCallback);
+
+        mouseButtonCallback = new MouseButtonCallback();
+        mouseButtonCallback.add(GLFW.glfwSetMouseButtonCallback(openglID, mouseButtonCallback));
+        mouseButtonCallback.add(this::mouseButtonCallback);
+        // mouseButtonCallback.add(Mouse::callback);
+
+        mouseEnteredCallback = new MouseEnteredCallback();
+        mouseEnteredCallback.add(GLFW.glfwSetCursorEnterCallback(openglID, mouseEnteredCallback));
+        mouseEnteredCallback.add(this::mouseEnteredCallback);
+        // mouseEnteredCallback.add(Mouse::enteredCallback);
+
+        scrollCallback = new ScrollCallback();
+        scrollCallback.add(GLFW.glfwSetScrollCallback(openglID, scrollCallback));
+        scrollCallback.add(this::scrollCallback);
+        // scrollCallback.add(Mouse::scrollCallback);
     }
 
     /**
