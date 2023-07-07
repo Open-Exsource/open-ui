@@ -6,6 +6,7 @@ import net.exsource.openlogger.util.ConsoleColor;
 import net.exsource.openui.OpenUI;
 import net.exsource.openui.UIFactory;
 import net.exsource.openui.enums.Errors;
+import net.exsource.openui.events.windows.WindowCloseEvent;
 import net.exsource.openui.events.windows.WindowCreateEvent;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
 import net.exsource.openui.logic.AbstractRenderer;
@@ -846,7 +847,7 @@ public abstract class UIWindow {
      * @param windowID the window which will close.
      */
     protected void closeCallback(long windowID) {
-
+        EventManager.callEvent(new WindowCloseEvent(this));
     }
 
     /**
