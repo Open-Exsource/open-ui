@@ -11,6 +11,8 @@ import net.exsource.openui.events.windows.WindowCreateEvent;
 import net.exsource.openui.exception.windows.WindowCantBuildException;
 import net.exsource.openui.logic.AbstractRenderer;
 import net.exsource.openui.logic.Renderer;
+import net.exsource.openui.logic.input.Keyboard;
+import net.exsource.openui.logic.input.Mouse;
 import net.exsource.openui.ui.component.Component;
 import net.exsource.openui.ui.frame.Window;
 import net.exsource.openutils.event.EventManager;
@@ -110,7 +112,7 @@ public abstract class UIWindow {
      * {@link UIFactory#createWindow(String, String, int, int, Class)} to initialize you window.
      * If you need a complete finished loop system which can swap fps and ups then use
      * {@link AbstractWindow} instance of {@link UIWindow}.
-     * @param identifier the identifier for the window. If it null then it will create a identifier by
+     * @param identifier the identifier for the window. If it null then it will create an identifier by
      *                   {@link #generateSerialID(String)}.
      * @see AbstractWindow
      * @see UIFactory
@@ -148,7 +150,7 @@ public abstract class UIWindow {
 
     /**
      * Function is used for the initialization state at a window.
-     * You can create here object like one use thinks or variables like final. Note i mean like final you can't
+     * You can create here object like one use thinks or variables like final. Note I mean like final you can't
      * use here final as key word because this can only in constructors. This function is called automatically
      * in the {@link #run()} life span.
      */
@@ -185,7 +187,7 @@ public abstract class UIWindow {
     }
 
     /**
-     * @return long - from glfw created id for the window, is better for the maschine to read.
+     * @return long - from glfw created id for the window, is better for the machine to read.
      */
     public long getOpenglID() {
         _wait();
@@ -326,7 +328,7 @@ public abstract class UIWindow {
      * ######################################################################## */
 
     /**
-     * Function to add renderer to the current window. Choose a render template, {@link Renderer} is a
+     * Function to add renderer to the current window. Choose a render template, {@link Renderer} is an
      * interface and can't be used by itself. Our recommended renderer class is {@link AbstractRenderer} which
      * contains more useful functions.
      * The function will return if the given renderer already exist.
@@ -345,7 +347,7 @@ public abstract class UIWindow {
     }
 
     /**
-     * Function removes a existing renderer which is running in the window. Note that
+     * Function removes an existing renderer which is running in the window. Note that
      * the {@link Renderer} will call his {@link Renderer#dispose()} function before he will
      * remove.
      * The function will return if the given renderer not exist.
@@ -357,7 +359,7 @@ public abstract class UIWindow {
     }
 
     /**
-     * Function removes a existing renderer which is running in the window. Note that
+     * Function removes an existing renderer which is running in the window. Note that
      * the {@link Renderer} will call his {@link Renderer#dispose()} function before he will
      * remove.
      * The function will return if the given renderer not exist.
@@ -488,7 +490,7 @@ public abstract class UIWindow {
      */
     public void removeComponent(@NotNull String ID) {
         if(!hasComponent(ID)) {
-            logger.warn("The component " + ID + " dosen't exist in window " + getIdentifier());
+            logger.warn("The component " + ID + " doesn't exist in window " + getIdentifier());
             return;
         }
 
@@ -725,7 +727,7 @@ public abstract class UIWindow {
     }
 
     /**
-     * @return WindowMaximizedCallback - the callback if the window will be change to maximized or minimized.
+     * @return WindowMaximizedCallback - the callback if the window will be changed to maximized or minimized.
      */
     public WindowMaximizedCallback getMaximizedCallback() {
         return maximizedCallback;
@@ -1050,27 +1052,27 @@ public abstract class UIWindow {
         keyCallback = new KeyCallback();
         keyCallback.add(GLFW.glfwSetKeyCallback(openglID, keyCallback));
         keyCallback.add(this::keyCallback);
-        // keyCallback.add(KeyBoard::callback);
+        keyCallback.add(Keyboard::callback);
 
         mousePositionCallback = new MousePositionCallback();
         mousePositionCallback.add(GLFW.glfwSetCursorPosCallback(openglID, mousePositionCallback));
         mousePositionCallback.add(this::mousePositionCallback);
-        // mousePositionCallback.add(Mouse::positionCallback);
+        mousePositionCallback.add(Mouse::positionCallback);
 
         mouseButtonCallback = new MouseButtonCallback();
         mouseButtonCallback.add(GLFW.glfwSetMouseButtonCallback(openglID, mouseButtonCallback));
         mouseButtonCallback.add(this::mouseButtonCallback);
-        // mouseButtonCallback.add(Mouse::callback);
+        mouseButtonCallback.add(Mouse::callback);
 
         mouseEnteredCallback = new MouseEnteredCallback();
         mouseEnteredCallback.add(GLFW.glfwSetCursorEnterCallback(openglID, mouseEnteredCallback));
         mouseEnteredCallback.add(this::mouseEnteredCallback);
-        // mouseEnteredCallback.add(Mouse::enteredCallback);
+        mouseEnteredCallback.add(Mouse::enteredCallback);
 
         scrollCallback = new ScrollCallback();
         scrollCallback.add(GLFW.glfwSetScrollCallback(openglID, scrollCallback));
         scrollCallback.add(this::scrollCallback);
-        // scrollCallback.add(Mouse::scrollCallback);
+        scrollCallback.add(Mouse::scrollCallback);
     }
 
     /**
