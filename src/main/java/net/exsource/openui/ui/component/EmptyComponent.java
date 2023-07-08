@@ -1,8 +1,6 @@
-package net.exsource.openui.ui.component.shapes;
+package net.exsource.openui.ui.component;
 
-import net.exsource.openui.ui.component.Component;
-
-public class Rectangle extends Component {
+public class EmptyComponent extends Component {
 
     /**
      * Constructor for creating new {@link Component}'s. This constructor
@@ -12,9 +10,7 @@ public class Rectangle extends Component {
      *
      * @param localizedName the wish identifier name.
      */
-    public Rectangle(String localizedName) {
-        super(localizedName);
-        this.setSize(200, 100);
+    public EmptyComponent() {
+        super("empty");
     }
-
 }

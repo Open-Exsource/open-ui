@@ -1,8 +1,11 @@
 package net.exsource.openui.logic;
 
 import net.exsource.openlogger.Logger;
+import net.exsource.openui.annotations.AnnotationProcessor;
+import net.exsource.openui.annotations.component.SetComponentWindow;
 import net.exsource.openui.events.renderer.RendererInitializeEvent;
 import net.exsource.openui.ui.UIWindow;
+import net.exsource.openui.ui.component.Component;
 import net.exsource.openutils.event.EventManager;
 import org.jetbrains.annotations.NotNull;
 
@@ -29,7 +32,7 @@ public abstract class AbstractRenderer implements Renderer {
         this.needPatch = false;
     }
 
-    protected abstract void load(UIWindow window);
+    public abstract void load(UIWindow window);
     protected abstract void func(UIWindow window);
 
     @Override

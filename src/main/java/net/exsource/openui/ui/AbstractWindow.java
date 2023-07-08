@@ -1,5 +1,7 @@
 package net.exsource.openui.ui;
 
+import net.exsource.openui.logic.Renderer;
+
 public abstract class AbstractWindow extends UIWindow {
 
     private FPS fpsCap;
@@ -53,6 +55,7 @@ public abstract class AbstractWindow extends UIWindow {
             }
 
             if(nowRender) {
+                render();
                 update();
                 frames++;
             }
@@ -101,6 +104,13 @@ public abstract class AbstractWindow extends UIWindow {
 
         public int getTimesAsInt() {
             return (int) getTimes();
+        }
+    }
+
+    private void render() {
+        for(Renderer renderer : getRenderers()) {
+            renderer.initialize();
+            renderer.render(this);
         }
     }
 }

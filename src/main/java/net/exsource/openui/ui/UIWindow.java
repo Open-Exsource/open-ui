@@ -13,6 +13,7 @@ import net.exsource.openui.logic.AbstractRenderer;
 import net.exsource.openui.logic.Renderer;
 import net.exsource.openui.logic.input.Keyboard;
 import net.exsource.openui.logic.input.Mouse;
+import net.exsource.openui.logic.renderer.UIBackgroundRenderer;
 import net.exsource.openui.ui.component.Component;
 import net.exsource.openui.ui.frame.Window;
 import net.exsource.openutils.event.EventManager;
@@ -69,6 +70,7 @@ public abstract class UIWindow {
     private int height;
 
     private boolean created;
+    private boolean vsync;
 
     private final List<Renderer> renderers = new ArrayList<>();
     private final List<Component> components = new ArrayList<>();
@@ -123,6 +125,7 @@ public abstract class UIWindow {
         this.title = getClass().getSimpleName();
         this.width = DEFAULT_WIDTH;
         this.height = DEFAULT_HEIGHT;
+        this.vsync = false;
         this.thread = UIFactory.generateThread(this::run, this);
         thread.start();
     }
@@ -215,6 +218,7 @@ public abstract class UIWindow {
         return getClass().getSimpleName();
     }
 
+    //ToDo: include better function.
     public void setTitle(String title) {
         if(title == null) {
             title = getClass().getSimpleName();
@@ -236,6 +240,24 @@ public abstract class UIWindow {
     public boolean isCreated() {
         _wait();
         return created;
+    }
+
+    /**
+     * Function change vsync state for window.
+     * @param state the new vsync state.
+     */
+    public void setVsync(boolean state) {
+        _wait();
+        this.vsync = state;
+        GLFW.glfwSwapInterval(state ? 1 : 0);
+    }
+
+    /**
+     * @return boolean - state of window vsync.
+     */
+    public boolean isVsync() {
+        _wait();
+        return vsync;
     }
 
     public void setWidth(int width) {
@@ -287,7 +309,7 @@ public abstract class UIWindow {
         loadDefaultRenderers();
 
         GLFW.glfwMakeContextCurrent(openglID);
-        GLFW.glfwSwapInterval(0);
+        GLFW.glfwSwapInterval(vsync ? 1 : 0);
         logger.info("Window HID=" + openglID + ", named=" + getIdentifier());
         this.created = true;
         EventManager.callEvent(new WindowCreateEvent(this));
@@ -462,12 +484,12 @@ public abstract class UIWindow {
      */
     public void addComponent(@NotNull Component component) {
         if(hasComponent(component)) {
-            logger.warn("The same component exist with the name " + component.getID());
+            logger.warn("The same component exist with the name " + component.getLocalizedName());
             return;
         }
 
         components.add(component);
-        logger.debug("Added new component " + component.getID());
+        logger.debug("Added new component " + component.getLocalizedName());
     }
 
     /**
@@ -478,12 +500,12 @@ public abstract class UIWindow {
      * @see Component
      */
     public void removeComponent(@NotNull Component component) {
-        removeComponent(component.getID());
+        removeComponent(component.getLocalizedName());
     }
 
     /**
      * Function removes a specified component form the window by the given ID.
-     * The ID is {@link Component#getID()} in this case. If the component wasn't found
+     * The ID is {@link Component#getLocalizedName()} in this case. If the component wasn't found
      * at the {@link #getComponents()} list, then it will return and display a warning log.
      * @param ID the identifier for find the to delete component.
      * @see Component
@@ -519,7 +541,7 @@ public abstract class UIWindow {
 
     /**
      * Function checks the {@link #getComponents()} list for a specified {@link Component} by ID.
-     * @param ID the {@link Component#getID()} need to be used.
+     * @param ID the {@link Component#getLocalizedName()} need to be used.
      * @return boolean - true if it was found in the list.
      * @see Component
      */
@@ -529,14 +551,14 @@ public abstract class UIWindow {
 
     /**
      * Function searched for a component in the {@link #getComponents()} list by {@link Component} as key parameter.
-     * It will call {@link #getComponent(String)} and include {@link Component#getID()} as the parameter.
+     * It will call {@link #getComponent(String)} and include {@link Component#getLocalizedName()} as the parameter.
      * Can return null if the component wasn't found.
      * @param component the identifier for the component we ar searching for.
      * @return Component - the object which was found, warning can be null!
      * @see Component
      */
     public Component getComponent(@NotNull Component component) {
-        return getComponent(component.getID());
+        return getComponent(component.getLocalizedName());
     }
 
     /**
@@ -550,7 +572,7 @@ public abstract class UIWindow {
     public Component getComponent(@NotNull String ID) {
         Component component = null;
         for(Component entry : components) {
-            if(entry.getID().equals(ID)) {
+            if(entry.getLocalizedName().equals(ID)) {
                 component = entry;
                 break;
             }
@@ -579,7 +601,7 @@ public abstract class UIWindow {
     }
 
     /**
-     * Function triggered the window to close. This will stop the thread and all running {@link Dialog}'s!
+     * Function triggered the window to close.
      */
     public void close() {
         GLFW.glfwSetWindowShouldClose(getOpenglID(), true);
@@ -1000,7 +1022,7 @@ public abstract class UIWindow {
      * @see AbstractRenderer
      */
     private void loadDefaultRenderers() {
-        //Todo: put here all UI renderers.
+        renderers.add(new UIBackgroundRenderer());
     }
 
     /**
