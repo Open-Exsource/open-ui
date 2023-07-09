@@ -1,6 +1,7 @@
 package net.exsource.openui.ui.component;
 
 import net.exsource.openlogger.Logger;
+import net.exsource.openui.UIFactory;
 import net.exsource.openui.annotations.component.SetComponentWindow;
 import net.exsource.openui.ui.UIWindow;
 import net.exsource.openui.ui.component.shapes.Rectangle;
@@ -39,7 +40,8 @@ public abstract class Component {
     private Component parent;
 
     @SetComponentWindow
-    private UIWindow window;
+    private UIWindow window = null;
+
 
     /* ########################################################################
      *
@@ -410,25 +412,22 @@ public abstract class Component {
             }
             id = id + "-" + index;
         }
+        idList.add(id);
         return id;
     }
 
     /**
      * Function cast the current {@link Component} to the given type.
      * The function can be used for safer cast.
-     * @param type the class which inherit the {@link Component} class.
      * @return T - the cast object.
      * @param <T> the component class which is now the key type.
      * @see EmptyComponent
      */
     @SuppressWarnings("unchecked")
-    public <T extends Component> T cast(Class<T> type) {
+    public <T> T cast() {
         T component;
-        if(type == null) {
-            component = (T) new EmptyComponent();
-        }
         try {
-            component = (T) Class.forName(type.getName()).getDeclaredConstructor(String.class).newInstance();
+            component = (T) Class.forName(getClass().getName());
         } catch (Exception exception) {
             logger.error(exception);
             component = (T) new EmptyComponent();

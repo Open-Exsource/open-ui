@@ -17,8 +17,13 @@ public class UIBackgroundRenderer extends UIRenderer {
 
     }
 
+    private int i = 100;
     @Override
     public void render(@NotNull List<Component> components) {
-        System.out.println("Renderer -> " + getName() + ", Size -> " + components.size());
+        if(i < 0) {
+            System.out.println("Renderer -> " + getName() + ", to render: " + components.size());
+            i = 100;
+        }
+        i--;
     }
 }

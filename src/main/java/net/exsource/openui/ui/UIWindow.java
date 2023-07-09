@@ -1008,7 +1008,7 @@ public abstract class UIWindow {
     public <T> T casted() {
         T window = (T) this;
         try {
-            window = (T) Class.forName(getClass().getName()).getDeclaredConstructor(String.class).newInstance(getIdentifier());
+            window = (T) Class.forName(getClass().getName());
         } catch (Exception exception) {
             logger.error(exception);
         }
