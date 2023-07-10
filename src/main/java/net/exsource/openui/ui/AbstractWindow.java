@@ -1,6 +1,7 @@
 package net.exsource.openui.ui;
 
 import net.exsource.openui.logic.Renderer;
+import org.lwjgl.nanovg.NanoVG;
 
 public abstract class AbstractWindow extends UIWindow {
 
@@ -9,9 +10,12 @@ public abstract class AbstractWindow extends UIWindow {
 
     private float frameTime;
 
+    private boolean allowNvg;
+
     public AbstractWindow(String identifier) {
         super(identifier);
         this.setFpsCap(FPS.F_60);
+        this.useNanoVG(true);
     }
 
     protected abstract void input();
@@ -54,12 +58,37 @@ public abstract class AbstractWindow extends UIWindow {
                 }
             }
 
+            //FIXME: after change the allow state from nvg to false it will display old rectangle after all.
             if(nowRender) {
-                render();
+                renderCheck();
+
+                if(allowNvg) {
+                    NanoVG.nvgBeginFrame(context.nvgID(), getWidth(), getHeight(), 1f);
+
+                    for(Renderer renderer : getRenderers()) {
+                        renderer.render(this);
+                    }
+
+                    NanoVG.nvgRestore(context.nvgID());
+                    NanoVG.nvgEndFrame(context.nvgID());
+                } else {
+                    for(Renderer renderer : getRenderers()) {
+                        renderer.render(this);
+                    }
+                }
+
                 update();
                 frames++;
             }
         }
+    }
+
+    public void useNanoVG(boolean allowNvg) {
+        this.allowNvg = allowNvg;
+    }
+
+    public boolean isAllowNvg() {
+        return allowNvg;
     }
 
     public void setFpsCap(FPS fpsCap) {
@@ -107,10 +136,11 @@ public abstract class AbstractWindow extends UIWindow {
         }
     }
 
-    private void render() {
+    private void renderCheck() {
         for(Renderer renderer : getRenderers()) {
-            renderer.initialize();
-            renderer.render(this);
+            if(!renderer.isInitialized()) {
+                renderer.initialize();
+            }
         }
     }
 }
