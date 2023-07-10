@@ -1,6 +1,7 @@
 package net.exsource.openui.utils;
 
 import net.exsource.openutils.tools.Color;
+import org.jetbrains.annotations.NotNull;
 import org.lwjgl.nanovg.NVGColor;
 
 /**
@@ -9,17 +10,7 @@ import org.lwjgl.nanovg.NVGColor;
  */
 public class NanoVGColor {
 
-    private Color color;
-
-    public NanoVGColor(Color color) {
-        this.color = color == null ? Color.FALLBACK_COLOR : color;
-    }
-
-    public Color getColor() {
-        return color;
-    }
-
-    public NVGColor asNVGColor() {
+    public static NVGColor convert(@NotNull Color color) {
         NVGColor nvgColor = NVGColor.calloc();
 
         nvgColor.r(color.getPercentRed());

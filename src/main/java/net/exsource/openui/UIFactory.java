@@ -11,7 +11,17 @@ import java.util.List;
 import java.util.Map;
 
 /**
+ * Class controls the general ui system. This is needed
+ * for registering {@link Thread}'s or {@link UIWindow}'s. If you create
+ * a window by your own you should save this in a list to get it again.
+ * Note that this system is generally used for our library, to use this correct we
+ * need to create windows like {@link #createWindow(String, String, int, int, Class)}.
+ * This will create a new {@link UIWindow} with the specified type like {@link Window} class.
+ * For more information visit our website: <a href="https://www.exsource.de">click here</a>.
  * @since 1.0.0
+ * @see UIWindow
+ * @see Thread
+ * @see Window
  * @author Daniel Ramke
  */
 public final class UIFactory {

@@ -3,6 +3,7 @@ package net.exsource.openui.ui.component;
 import net.exsource.openlogger.Logger;
 import net.exsource.openui.UIFactory;
 import net.exsource.openui.annotations.component.SetComponentWindow;
+import net.exsource.openui.style.Style;
 import net.exsource.openui.ui.UIWindow;
 import net.exsource.openui.ui.component.shapes.Rectangle;
 import org.jetbrains.annotations.NotNull;
@@ -42,6 +43,8 @@ public abstract class Component {
     @SetComponentWindow
     private UIWindow window = null;
 
+    private Style style;
+
 
     /* ########################################################################
      *
@@ -60,6 +63,7 @@ public abstract class Component {
         this.localizedName = id_check(localizedName);
         this.children = new ArrayList<>();
         this.parent = null;
+        this.style = Style.builder().build();
         this.setSize(0);
         this.setPosition(0);
         components.add(this);
@@ -256,6 +260,21 @@ public abstract class Component {
      */
     public int getAbsoluteY() {
         return absoluteY;
+    }
+
+    /**
+     * Function set a hard coded style. Recommended using css classes for this.
+     * @param style new coded style.
+     */
+    public void setStyle(Style style) {
+        this.style = style;
+    }
+
+    /**
+     * @return Style - current style from this component.
+     */
+    public Style getStyle() {
+        return style;
     }
 
     /* ########################################################################

@@ -6,6 +6,7 @@ public enum Errors {
     OK(0, "The program have no errors or warnings."),
     GLFW_GL_THREAD(304, "OpenGL can't create in current thread."),
     PROGRAM_ARGS(101, "Program arguments wasn't not correct."),
+    WINDOW_NOT_CONTAINS_NVG(94, "NanoVG can't find an mem address ID!"),
     WINDOW_BUILD(204, "Can't build window");
 
     private final int code;

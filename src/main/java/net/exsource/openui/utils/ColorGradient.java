@@ -4,6 +4,8 @@ import net.exsource.openlogger.Logger;
 import net.exsource.openui.logic.renderer.util.NanoVGBackground;
 import net.exsource.openutils.tools.Color;
 
+import java.util.List;
+
 /**
  * Class generates color gradients as css format. This is needed for better
  * background options in {@link NanoVGBackground}, or other classes which need
@@ -193,5 +195,37 @@ public class ColorGradient {
             }
             return direction;
         }
+    }
+
+    /**
+     * Function creates a new gradient with 2 colors.
+     * @param start the first color.
+     * @param end the second color.
+     * @return ColorGradient - the finished gradient object.
+     */
+    public static ColorGradient get(Color start, Color end) {
+        return new ColorGradient(start, end);
+    }
+
+    /**
+     * Function creates a new gradient from the list of colors.
+     * @param colors the colored list.
+     * @return ColorGradient - the finished gradient object.
+     */
+    public static ColorGradient get(List<Color> colors) {
+        Color[] array = new Color[colors.size()];
+        for(int i = 0; i < colors.size(); i++) {
+            array[i] = colors.get(i);
+        }
+        return get(array);
+    }
+
+    /**
+     * Function creates a new gradient from the array of colors.
+     * @param colors the colored array.
+     * @return ColorGradient - the finished gradient object.
+     */
+    public static ColorGradient get(Color... colors) {
+        return new ColorGradient(colors);
     }
 }

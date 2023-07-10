@@ -1108,7 +1108,7 @@ public abstract class UIWindow {
      * @param nvgID the context of {@link NanoVG}.
      * @param capabilities the current or created {@link GL#createCapabilities()}.
      */
-    record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
+    public record Context(long openglID, long nvgID, GLCapabilities capabilities) { }
 
     /**
      * Private function to generate a UID for the window.
