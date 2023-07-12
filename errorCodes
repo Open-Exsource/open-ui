@@ -1,5 +1,6 @@
 Code                Description                                                 Level
 0                   The program have no errors or warnings.                     Fine
 304                 OpenGL can't create in current thread.                      Fatal
+94                  NanoVG can't find an mem address ID!                        Fatal
 101                 Program arguments wasn't not correct.                       Warning
 204                 Can't build window                                          Fatal

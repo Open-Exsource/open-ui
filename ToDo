@@ -1,8 +1,0 @@
-Bug: Currently the AbstractWindow.class need a patch for Performance.
-     There is a bug by closing the window, if you try it, it will not close and
-     the current running thread is still alive!
-
-New: Make the window system like the component system from old project. This means
-     you can write own windows or make a parent and child window which share one thread.
-
-New: Create a System for Resource Information and handling.

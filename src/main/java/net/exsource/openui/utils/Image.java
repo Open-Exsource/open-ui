@@ -211,7 +211,7 @@ public class Image {
      * @return Image the founded image can be null!
      */
     public static Image get(@NotNull String name) {
-        //return Registry.getImage(name); Todo: above this class!
+        //return Registry.getImage(name); ToDo: above this class!
         return null;
     }
 

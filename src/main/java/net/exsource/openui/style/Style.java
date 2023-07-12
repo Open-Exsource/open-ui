@@ -4,6 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.Setter;
 import net.exsource.openui.style.generic.Background;
+import net.exsource.openui.utils.Image;
 import net.exsource.openutils.enums.Colors;
 import net.exsource.openutils.math.Insets;
 import net.exsource.openutils.tools.Color;
@@ -17,7 +18,7 @@ public class Style {
     private int zIndex = 0;
 
     @Builder.Default
-    private Background background = Background.get(Color.FALLBACK_COLOR);
+    private Background background = Background.get(Image.create("C:\\Users\\Daniel\\Pictures\\Saved Pictures\\test.jpg"));
 
     @Builder.Default
     private Color forgroundColor = Color.named(Colors.BLACK);

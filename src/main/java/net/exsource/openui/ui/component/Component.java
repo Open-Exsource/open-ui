@@ -1,7 +1,6 @@
 package net.exsource.openui.ui.component;
 
 import net.exsource.openlogger.Logger;
-import net.exsource.openui.UIFactory;
 import net.exsource.openui.annotations.component.SetComponentWindow;
 import net.exsource.openui.style.Style;
 import net.exsource.openui.ui.UIWindow;
