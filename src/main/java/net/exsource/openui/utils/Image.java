@@ -1,6 +1,7 @@
 package net.exsource.openui.utils;
 
 import net.exsource.openlogger.Logger;
+import net.exsource.openui.AssetFactory;
 import net.exsource.openutils.tools.Commons;
 import org.jetbrains.annotations.NotNull;
 
@@ -46,7 +47,7 @@ public class Image {
         this.name = Commons.getOnlyFileName(path);
         this.setAlpha(1.0f);
         this.createInformation();
-        //Todo: create a new system for assets handling.
+        AssetFactory.registerImage(this);
     }
 
     /**
@@ -211,7 +212,10 @@ public class Image {
      * @return Image the founded image can be null!
      */
     public static Image get(@NotNull String name) {
-        //return Registry.getImage(name); ToDo: above this class!
+        Image image = AssetFactory.getImage(name);
+        if(image == null) {
+            //Todo: set image to placeholder warning.
+        }
         return null;
     }
 
