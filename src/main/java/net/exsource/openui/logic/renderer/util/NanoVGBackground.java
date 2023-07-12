@@ -3,6 +3,7 @@ package net.exsource.openui.logic.renderer.util;
 import net.exsource.openlogger.Logger;
 import net.exsource.openui.OpenUI;
 import net.exsource.openui.enums.Errors;
+import net.exsource.openui.logic.renderer.UIRenderer;
 import net.exsource.openui.style.generic.Background;
 import net.exsource.openui.ui.UIWindow;
 import net.exsource.openui.utils.ColorGradient;
@@ -14,6 +15,15 @@ import org.jetbrains.annotations.NotNull;
 import org.lwjgl.nanovg.NanoVG;
 import org.lwjgl.system.MemoryUtil;
 
+/**
+ * @since 1.0.0
+ * @see UIRenderer
+ * @see NanoVG
+ * @see UIWindow
+ * @see Background
+ * @see Radius
+ * @author Daniel Ramke
+ */
 public class NanoVGBackground {
 
     private static final Logger logger = Logger.getLogger();
@@ -23,6 +33,17 @@ public class NanoVGBackground {
 
     private boolean error;
 
+    /**
+     * Constructor for internal use.
+     * This will be called at the {@link UIRenderer#load(UIWindow)} function.
+     * This is absolutely needed to use the class functions without errors.
+     * Note if {@link UIWindow#getContext()} null or doesn't contain a valid {@link NanoVG} id,
+     * the class will not work correctly and throw an error.
+     * @param window need background functions.
+     * @see UIWindow
+     * @see NanoVG
+     * @see UIRenderer
+     */
     public NanoVGBackground(@NotNull UIWindow window) {
         this.window = window;
         this.ID = window.getContext().nvgID();
@@ -31,6 +52,19 @@ public class NanoVGBackground {
         }
     }
 
+    /**
+     * Function draws the background by an {@link Background} object which define the
+     * type of the background. Available types ar listening in {@link Background#getType()}.
+     * This ar the types: COLOR, IMAGE and LINEAR_GRADIENT.
+     * @param x the x position of the created object.
+     * @param y the y position of the created object.
+     * @param width the width of the created object.
+     * @param height the height of the created object.
+     * @param background {@link Background} object.
+     * @apiNote This function is recommended to use. It will always use in our
+     * render classes which controls backgrounds.
+     * @see Background
+     */
     public void draw(int x, int y, int width, int height, Background background) {
         if(background == null) {
             drawColor(x, y, width, height, Color.FALLBACK_COLOR, Radius.FALLBACK_RADIUS);
@@ -50,6 +84,20 @@ public class NanoVGBackground {
         }
     }
 
+    /**
+     * Function to draw the background in a single {@link Color}.
+     * Note that if the color is null then it will replace with {@link Color#FALLBACK_COLOR}.
+     * @param x the x position of the created object.
+     * @param y the y position of the created object.
+     * @param width the width of the created object.
+     * @param height the height of the created object.
+     * @param color the defined color for the object.
+     * @param radius the radius for the created object.
+     * @apiNote Currently is it not ready to use {@link java.awt.Color}, because our Color class can't
+     * convert that.
+     * @see Color
+     * @see Radius
+     */
     public void drawColor(int x, int y, int width, int height, Color color, Radius radius) {
         if(color == null)
             color = Color.FALLBACK_COLOR;
