@@ -1,13 +1,15 @@
 package net.exsource.openui.utils;
 
 import net.exsource.openlogger.Logger;
-import net.exsource.openui.AssetFactory;
+import net.exsource.openui.utils.assets.IAsset;
 import net.exsource.openutils.tools.Commons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -20,7 +22,7 @@ import java.util.Map;
  * @since 1.0.0
  * @author Daniel Ramke
  */
-public class Image {
+public class Image implements IAsset {
 
     private final Logger logger = Logger.getLogger();
 
@@ -47,7 +49,6 @@ public class Image {
         this.name = Commons.getOnlyFileName(path);
         this.setAlpha(1.0f);
         this.createInformation();
-        AssetFactory.registerImage(this);
     }
 
     /**
@@ -79,6 +80,7 @@ public class Image {
     /**
      * @return String - the current image path.
      */
+    @Override
     public String getPath() {
         return path;
     }
@@ -87,8 +89,27 @@ public class Image {
      * This returned the file name, this is useful as identifier.
      * @return String - final name of this image.
      */
+    @Override
     public String getName() {
         return name;
+    }
+
+    @Override
+    public float getMemSize() {
+        try {
+            InputStream stream = Commons.resurceToInputStream(getPath());
+            float size = (float) stream.available() / (long) 1e+6;
+            stream.close();
+            return size;
+        } catch (IOException e) {
+            logger.fatal("Can't find file by path: " + getPath());
+            return -1;
+        }
+    }
+
+    @Override
+    public void dispose() {
+
     }
 
     /**
@@ -193,6 +214,7 @@ public class Image {
             image = new Image(path);
             image.setAlpha(alpha);
         }
+        System.out.println("Size: " + image.getMemSize());
         return image;
     }
 
@@ -212,10 +234,6 @@ public class Image {
      * @return Image the founded image can be null!
      */
     public static Image get(@NotNull String name) {
-        Image image = AssetFactory.getImage(name);
-        if(image == null) {
-            //Todo: set image to placeholder warning.
-        }
         return null;
     }
 

@@ -21,7 +21,7 @@ import org.lwjgl.system.MemoryUtil;
 /**
  * Class is used for allow users to render {@link Background} objects.
  * This class can use css properties as well and render Colors, Images and
- * Linear Gradients. note that {@link Image} supports .gif files but it is
+ * Linear Gradients. note that {@link Image} supports .gif files, but it is
  * not working currently.
  * @since 1.0.0
  * @see UIRenderer
