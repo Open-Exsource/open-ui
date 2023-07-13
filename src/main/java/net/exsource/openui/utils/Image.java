@@ -1,13 +1,12 @@
 package net.exsource.openui.utils;
 
 import net.exsource.openlogger.Logger;
-import net.exsource.openui.utils.assets.IAsset;
+import net.exsource.openui.logic.cache.ICache;
 import net.exsource.openutils.tools.Commons;
 import org.jetbrains.annotations.NotNull;
 
 import javax.imageio.ImageIO;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -22,7 +21,7 @@ import java.util.Map;
  * @since 1.0.0
  * @author Daniel Ramke
  */
-public class Image implements IAsset {
+public class Image implements ICache {
 
     private final Logger logger = Logger.getLogger();
 
@@ -31,6 +30,7 @@ public class Image implements IAsset {
     private final Map<Long, Integer> gl_func_id_list = new HashMap<>();
     private final String path;
     private final String name;
+    private final String type;
 
     private int imageWidth;
     private int imageHeight;
@@ -47,8 +47,19 @@ public class Image implements IAsset {
     public Image(@NotNull String path) {
         this.path = path;
         this.name = Commons.getOnlyFileName(path);
+        this.type = Commons.getFileType(path);
+        if(!checkFormat()) {
+            logger.error("Dosen't support " + type + ", as valid format!");
+            //Todo: use fallback image!
+            return;
+        }
         this.setAlpha(1.0f);
         this.createInformation();
+    }
+
+    @Override
+    public void dispose() {
+
     }
 
     /**
@@ -77,6 +88,11 @@ public class Image implements IAsset {
         return gl_func_id_list.getOrDefault(context, -1);
     }
 
+    @Override
+    public String getUID() {
+        return null;
+    }
+
     /**
      * @return String - the current image path.
      */
@@ -94,6 +110,24 @@ public class Image implements IAsset {
         return name;
     }
 
+    /**
+     * This returned the image type, the type is mean as the file extension.
+     * @return String - final type of this image.
+     */
+    public String getType() {
+        return type;
+    }
+
+    /**
+     * @return String[] - all allowed {@link Image} formats.
+     */
+    public String[] getAllowedFormats() {
+        return allowedFormats;
+    }
+
+    /**
+     * @return float - the current memory size from the file.
+     */
     @Override
     public float getMemSize() {
         try {
@@ -105,11 +139,6 @@ public class Image implements IAsset {
             logger.fatal("Can't find file by path: " + getPath());
             return -1;
         }
-    }
-
-    @Override
-    public void dispose() {
-
     }
 
     /**
@@ -181,6 +210,11 @@ public class Image implements IAsset {
 
     /**
      * Function created the needed image information for us.
+     * This will be absolute needed to create the correct {@link Image}.
+     * The width and height will be cached or all the colors.
+     * This function using {@link BufferedImage} to store and read the current
+     * {@link Image} data.
+     * @see BufferedImage
      */
     private void createInformation() {
         try {
@@ -202,6 +236,22 @@ public class Image implements IAsset {
     }
 
     /**
+     * Private function to check if the current created {@link Image} a
+     * valid {@link Image} or not.
+     * @return boolean - validation check state, true means it is valid.
+     */
+    private boolean checkFormat() {
+        boolean state = false;
+        for(String format : allowedFormats) {
+            if(format.equalsIgnoreCase(type)) {
+                state = true;
+                break;
+            }
+        }
+        return state;
+    }
+
+    /**
      * Function create a new image by the given path.
      * If the path be found than it will return the existing image.
      * @param path the new image path.
@@ -214,7 +264,6 @@ public class Image implements IAsset {
             image = new Image(path);
             image.setAlpha(alpha);
         }
-        System.out.println("Size: " + image.getMemSize());
         return image;
     }
 

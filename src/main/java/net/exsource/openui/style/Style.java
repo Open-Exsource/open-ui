@@ -18,8 +18,8 @@ public class Style {
     private int zIndex = 0;
 
     @Builder.Default
-   // private Background background = Background.get(Image.create(""));
-    private Background background = Background.get(Color.named(Colors.BLUEVIOLET));
+    private Background background = Background.get(Image.create("C:\\Users\\Daniel\\Pictures\\Saved Pictures\\test.jpg"));
+   // private Background background = Background.get(Color.named(Colors.BLUEVIOLET));
 
     @Builder.Default
     private Color forgroundColor = Color.named(Colors.BLACK);

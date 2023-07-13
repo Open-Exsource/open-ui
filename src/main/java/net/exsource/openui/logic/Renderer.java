@@ -28,12 +28,11 @@ public interface Renderer {
     /**
      * Function is used for converting a simple {@link Renderer} object to his correct class.
      * This means if you look for the correct renderer class, and you have known the class then you can
-     * fill it to the type parameter. If it was a successfully convertion then the function will return
+     * fill it to the type parameter. If it was a successful conversion then the function will return
      * the right object, if it was failed the return value is {@link Renderer}.
      * @param type the class type parameter.
      * @return T - the founded object as his correct type.
      * @param <T> - the key word will be replaced by class object.
-     * @exception Exception thrown if the class can't be found or casting.
      */
     @SuppressWarnings("unchecked")
     default <T extends Renderer> T cast(Class<T> type) {
