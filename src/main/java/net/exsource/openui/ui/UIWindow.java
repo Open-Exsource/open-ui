@@ -16,7 +16,11 @@ import net.exsource.openui.logic.input.Mouse;
 import net.exsource.openui.logic.renderer.UIBackgroundRenderer;
 import net.exsource.openui.ui.component.Component;
 import net.exsource.openui.ui.frame.Window;
+import net.exsource.openui.utils.ColorGradient;
+import net.exsource.openui.utils.Image;
+import net.exsource.openutils.enums.Colors;
 import net.exsource.openutils.event.EventManager;
+import net.exsource.openutils.tools.Color;
 import org.jetbrains.annotations.NotNull;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.nanovg.NanoVG;
@@ -68,6 +72,8 @@ public abstract class UIWindow {
 
     private int width;
     private int height;
+
+    protected Color background;
 
     private boolean created;
     private boolean vsync;
@@ -125,6 +131,7 @@ public abstract class UIWindow {
         this.title = getClass().getSimpleName();
         this.width = DEFAULT_WIDTH;
         this.height = DEFAULT_HEIGHT;
+        this.background = Color.named(Colors.BLACK);
         this.vsync = false;
         this.thread = UIFactory.generateThread(this::run, this);
         thread.start();
@@ -280,6 +287,66 @@ public abstract class UIWindow {
      */
     public int getHeight() {
         return height;
+    }
+
+    /**
+     * Function to set a new background color. Note that the {@link UIWindow} only supports
+     * single colors and not {@link Image}'s or {@link ColorGradient}'s.
+     * @param color the new background color.
+     */
+    public void setBackground(Color color) {
+        if(color == null) {
+            color = Color.FALLBACK_COLOR;
+        }
+        this.background = color;
+    }
+
+    /**
+     * Function to set a new background color. Note that the {@link UIWindow} only supports
+     * single colors and not {@link Image}'s or {@link ColorGradient}'s.
+     * @param red shared red bits.
+     * @param green shared green bits.
+     * @param blue shared blue bits.
+     */
+    public void setBackground(int red, int green, int blue) {
+        this.setBackground(Color.rgb(red, green, blue));
+    }
+
+    /**
+     * Function to set a new background color. Note that the {@link UIWindow} only supports
+     * single colors and not {@link Image}'s or {@link ColorGradient}'s.
+     * @param red shared red bits.
+     * @param green shared green bits.
+     * @param blue shared blue bits.
+     * @param alpha shared alpha bits.
+     */
+    public void setBackground(int red, int green, int blue, int alpha) {
+        this.setBackground(Color.rgba(red, green, blue, alpha));
+    }
+
+    /**
+     * Function to set a new background color. Note that the {@link UIWindow} only supports
+     * single colors and not {@link Image}'s or {@link ColorGradient}'s.
+     * @param hexadecimal the new background color.
+     */
+    public void setBackground(@NotNull String hexadecimal) {
+        this.setBackground(Color.hexadecimal(hexadecimal));
+    }
+
+    /**
+     * Function to set a new background color. Note that the {@link UIWindow} only supports
+     * single colors and not {@link Image}'s or {@link ColorGradient}'s.
+     * @param colors the new background color.
+     */
+    public void setBackground(@NotNull Colors colors) {
+        this.setBackground(Color.named(colors));
+    }
+
+    /**
+     * @return {@link Color} - current background color.
+     */
+    public Color getBackground() {
+        return background;
     }
 
     /* ########################################################################
@@ -908,7 +975,8 @@ public abstract class UIWindow {
      * @param height the new height.
      */
     protected void frameBufferSizeCallback(long windowID, int width, int height) {
-
+        this.setWidth(width);
+        this.setHeight(height);
     }
 
     /**

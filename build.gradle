@@ -13,7 +13,7 @@ plugins {
  * natives, this is important for load the gui handling stuff.
  */
 project.ext.lwjglVersion = "3.3.2"
-project.ext.lwjglNatives = "natives-windows"
+project.ext.lwjglNatives = "natives-linux"
 
 group 'com.exepta'
 version '1.0.0-SNAPSHOT'

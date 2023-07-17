@@ -2,6 +2,7 @@ package net.exsource.openui.ui;
 
 import net.exsource.openui.logic.Renderer;
 import org.lwjgl.nanovg.NanoVG;
+import org.lwjgl.opengl.GL11;
 
 public abstract class AbstractWindow extends UIWindow {
 
@@ -61,6 +62,9 @@ public abstract class AbstractWindow extends UIWindow {
             //FIXME: after change the allow state from nvg to false it will display old rectangle after all.
             if(nowRender) {
                 renderCheck();
+                GL11.glClear(GL11.GL_COLOR_BUFFER_BIT);
+                GL11.glClearColor(background.getPercentRed(), background.getPercentGreen(), background.getPercentBlue(), background.getPercentAlpha());
+                GL11.glViewport(0, 0, getWidth(), getHeight());
 
                 if(allowNvg) {
                     NanoVG.nvgBeginFrame(context.nvgID(), getWidth(), getHeight(), 1f);
